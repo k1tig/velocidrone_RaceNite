@@ -17,7 +17,7 @@ type item struct {
 }
 
 func (i item) Title() string       { return i.name }
-func (i item) Description() string { return i.raceTime }
+func (i item) Description() string { return i.raceTime + " | " + i.craft }
 func (i item) FilterValue() string { return i.name }
 
 type model struct {
@@ -55,10 +55,8 @@ func main() {
 		items = append(items, item{name: r.PlayerName, raceTime: r.LapTime, craft: r.ModelName})
 	}
 
-	items = append(items, item{name: "Beef", raceTime: "It's what's for dinner"})
-
 	m := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
-	m.list.Title = "My Fave Things"
+	m.list.Title = "Add Racers to Sheets:"
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
 
