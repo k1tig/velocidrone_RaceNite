@@ -7,16 +7,17 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gocarina/gocsv"
 )
 
 var docStyle = lipgloss.NewStyle().Margin(1, 2)
 
 type item struct {
-	name, desc string
+	name, raceTime, craft string
 }
 
 func (i item) Title() string       { return i.name }
-func (i item) Description() string { return i.desc }
+func (i item) Description() string { return i.raceTime }
 func (i item) FilterValue() string { return i.name }
 
 type model struct {
@@ -48,13 +49,13 @@ func (m model) View() string {
 }
 
 func main() {
-	items := []list.Item{
-		item{name: "Raspberry Pi’s", desc: "I have ’em all over my house"},
-		item{name: "Nutella", desc: "It's good on toast"},
-		item{name: "Bitter melon", desc: "It cools you down"},
+	getRacers()
+	items := []list.Item{}
+	for _, r := range checkedIn {
+		items = append(items, item{name: r.PlayerName, raceTime: r.LapTime, craft: r.ModelName})
 	}
 
-	items = append(items, item{name: "Beef", desc: "It's what's for dinner"})
+	items = append(items, item{name: "Beef", raceTime: "It's what's for dinner"})
 
 	m := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
 	m.list.Title = "My Fave Things"
@@ -64,5 +65,44 @@ func main() {
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
+	}
+}
+
+// compontents for retrieving VD qualifying time sheet
+type Client struct { // Our example struct, you can use "-" to ignore a field
+	PlayerName string `csv:"Player Name"`
+	LapTime    string `csv:"Lap Time"`
+	X_Pos      string `csv:"-"`
+	ModelName  string `csv:"Model Name"`
+	X_Country  string `csv:"-"`
+}
+
+var clients = []*Client{}
+var checkedIn = []*Client{}
+
+type racer struct {
+	name string
+}
+
+func getRacers() {
+	raceFile, err := os.OpenFile("race.csv", os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
+	defer raceFile.Close()
+
+	if err := gocsv.UnmarshalFile(raceFile, &clients); err != nil { // Load clients from file
+		panic(err)
+	}
+
+	for _, client := range clients { //clients are the master qual times
+		if client.ModelName == "TBS Spec" || client.ModelName == "Twig XL 3" {
+			checkedIn = append(checkedIn, client) // checkedIn seperates the class of quads from the master list
+		}
+	}
+
+	if _, err := raceFile.Seek(0, 0); err != nil { // Go to the start of the file
+		panic(err)
 	}
 }
