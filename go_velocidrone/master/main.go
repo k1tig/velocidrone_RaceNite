@@ -30,10 +30,18 @@ func (i fmvracer) Title() string       { return i.name }
 func (i fmvracer) Description() string { return "" }
 func (i fmvracer) FilterValue() string { return i.name }
 
+type state uint
+
+const (
+	vdView state = iota
+	fmvView
+)
+
 // Model Struct
 type model struct {
 	racers    list.Model
 	fmvRacers list.Model
+	state     state
 }
 
 // Moedl Init
@@ -43,25 +51,50 @@ func (m model) Init() tea.Cmd {
 
 // Model Update
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if msg.String() == "ctrl+c" {
+		switch msg.String() {
+		case "q", "ctrl+c":
 			return m, tea.Quit
+		//filler until disable esc key
+		case "tab":
+			if m.state == fmvView {
+				m.state = vdView
+
+			} else {
+				m.state = fmvView
+				return m, cmd
+			}
 		}
+		switch m.state {
+		case vdView:
+			m.racers, cmd = m.racers.Update(msg)
+			cmds = append(cmds, cmd)
+			return m, tea.Batch(cmds...)
+		case fmvView:
+			m.fmvRacers, cmd = m.fmvRacers.Update(msg)
+			cmds = append(cmds, cmd)
+			return m, tea.Batch(cmds...)
+
+		}
+
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
 		m.racers.SetSize(msg.Width-h, msg.Height-v/2)
 		m.fmvRacers.SetSize(msg.Width-h, msg.Height-v/2)
 	}
-	var cmd tea.Cmd
-	m.fmvRacers, cmd = m.fmvRacers.Update(msg)
-	m.racers, cmd = m.racers.Update(msg)
+	return m, tea.Batch(cmds...)
 
-	return m, cmd
+	//m.fmvRacers, cmd = m.fmvRacers.Update(msg)
+	//m.racers, cmd = m.racers.Update(msg)
 }
 
 // Model View
 func (m model) View() string {
+	m.racers.DisableQuitKeybindings()
+	m.fmvRacers.DisableQuitKeybindings()
 	left := docStyle.Render(m.racers.View())
 	right := docStyle.Render(m.fmvRacers.View())
 	body := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
