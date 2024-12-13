@@ -82,12 +82,12 @@ func NewModel() Model {
 			huh.NewInput().
 				Key("fmvname").
 				Title("FMV Name").
-				Description("Your name in the FMV Discord"),
+				Description("Enter FMV Discord Name"), // test names for validation
 
 			huh.NewInput().
-				Key("time").
-				Title("Race Time:").
-				Description("Input Total Racetime for Track"),
+				Key("vdname").
+				Title("Velocidrone Name").
+				Description("Enter 'SolaFide' or 'jon E5'"),
 
 			huh.NewConfirm().
 				Key("done").
@@ -96,7 +96,7 @@ func NewModel() Model {
 					if !v {
 						return fmt.Errorf("Welp, finish up then")
 					}
-					if m.form.GetString("fmvname") == "" || m.form.GetString("time") == "" {
+					if m.form.GetString("fmvname") == "" {
 						return fmt.Errorf("Enter Missing Fields")
 					}
 					return nil
@@ -112,7 +112,6 @@ func NewModel() Model {
 }
 
 func (m Model) Init() tea.Cmd {
-
 	m.getVDsheet()
 	return m.form.Init()
 }
@@ -130,7 +129,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = min(msg.Width, maxWidth) - m.styles.Base.GetHorizontalFrameSize()
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "esc", "ctrl+c", "q":
+		case "esc", "ctrl+c":
 			return m, tea.Quit
 		}
 	}
@@ -161,14 +160,16 @@ func (m Model) View() string {
 	case huh.StateCompleted:
 
 		var b strings.Builder
-
+		//Send VD and Discord names to raceNite Master list * not made yet
+		//toCheckinList := m.form.GetString("fmvname")
 		fmt.Fprintf(&b, "Racer Succefully Entered: %s", m.form.GetString("fmvname"))
 		return s.Status.Margin(0, 1).Padding(1, 2).Width(48).Render(b.String()) + "\n\n"
 	default:
 
-		var class string
+		var fmvname string
+
 		if m.form.GetString("fmvname") != "" {
-			class = "FMV Name: " + m.form.GetString("fmvname")
+			fmvname = "FMV Name: " + m.form.GetString("fmvname")
 		}
 
 		// Form (left side)
@@ -180,18 +181,14 @@ func (m Model) View() string {
 		{
 			var (
 				buildInfo = "Waiting..."
-				role      string
-				level     string
+				vdinfo    string
 			)
 
-			if m.form.GetString("time") != "" && m.form.GetString("fmvname") != "" {
-				level = "Time: " + m.form.GetString("time")
-				role = m.getRole()
-				role = "\n\n" + s.StatusHeader.Render("Velocidrone User Info") + "\n" + role
+			if m.form.GetString("fmvname") != "" && m.form.GetString("vdname") != "" {
+				vdinfo = m.getVdUser()
+				vdinfo = "\n\n" + s.StatusHeader.Render("Velocidrone User Info") + "\n" + vdinfo
+				buildInfo = fmt.Sprintf("%s\n", fmvname)
 
-			}
-			if m.form.GetString("fmvname") != "" {
-				buildInfo = fmt.Sprintf("%s\n%s", class, level)
 			}
 
 			const statusWidth = 28
@@ -202,7 +199,7 @@ func (m Model) View() string {
 				MarginLeft(statusMarginLeft).
 				Render(s.StatusHeader.Render("FMV Discord Checkin") + "\n" +
 					buildInfo +
-					role)
+					vdinfo)
 		}
 
 		errors := m.form.Errors()
@@ -249,8 +246,15 @@ func (m Model) appErrorBoundaryView(text string) string {
 	)
 }
 
-func (m Model) getRole() string {
-	return "Search for VD user data and return match here <~"
+func (m Model) getVdUser() string {
+	for _, racer := range okRaceClass {
+		formName := m.form.GetString("vdname")
+		if racer.PlayerName == formName {
+			vdUserMatch := ("FOUND...\n\nUsername: " + racer.PlayerName + "\nLaptime: " + racer.LapTime + "\nCraft: " + racer.ModelName)
+			return vdUserMatch
+		}
+	}
+	return "Racer not found"
 }
 
 func main() {
