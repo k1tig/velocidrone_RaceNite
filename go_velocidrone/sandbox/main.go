@@ -76,7 +76,7 @@ func NewModel() Model {
 	m.form = huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
-				Key("fmname").
+				Key("fmvname").
 				Title("FMV Name").
 				Description("Your name in the FMV Discord"),
 
@@ -91,6 +91,9 @@ func NewModel() Model {
 				Validate(func(v bool) error {
 					if !v {
 						return fmt.Errorf("Welp, finish up then")
+					}
+					if m.form.GetString("fmvname") == "" || m.form.GetString("time") == "" {
+						return fmt.Errorf("Enter Missing Fields")
 					}
 					return nil
 				}).
@@ -172,11 +175,10 @@ func (m Model) View() string {
 			var (
 				buildInfo = "Waiting..."
 				role      string
-
-				level string
+				level     string
 			)
 
-			if m.form.GetString("time") != "" {
+			if m.form.GetString("time") != "" && m.form.GetString("fmvname") != "" {
 				level = "Time: " + m.form.GetString("time")
 				role = m.getRole()
 				role = "\n\n" + s.StatusHeader.Render("Velocidrone User Info") + "\n" + role
