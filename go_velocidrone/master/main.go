@@ -7,10 +7,14 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
 	"github.com/gocarina/gocsv"
 )
 
-var docStyle = lipgloss.NewStyle().Margin(1, 2)
+var (
+	docStyle  = lipgloss.NewStyle().Margin(1, 2)
+	itemStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("202"))
+)
 
 // represents VD racers qualifying times
 type vdracer struct {
@@ -95,6 +99,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	m.racers.DisableQuitKeybindings()
 	m.fmvRacers.DisableQuitKeybindings()
+
 	left := docStyle.Render(m.racers.View())
 	right := docStyle.Render(m.fmvRacers.View())
 	body := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
@@ -119,7 +124,10 @@ func main() {
 
 	getFMVvoice()
 
-	m := model{racers: list.New(vdList, list.NewDefaultDelegate(), 0, 0),
+	//need to restructure making lists to aaccount for styling
+	r := list.New(vdList, list.NewDefaultDelegate(), 0, 0)
+	r.Styles.Title = itemStyle
+	m := model{racers: r,
 		fmvRacers: list.New(checkInList, list.NewDefaultDelegate(), 0, 0),
 	}
 
