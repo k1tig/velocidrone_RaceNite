@@ -76,7 +76,7 @@ func NewModel() Model {
 	m.form = huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
-				Key("class").
+				Key("fmname").
 				Title("FMV Name").
 				Description("Your name in the FMV Discord"),
 
@@ -153,13 +153,13 @@ func (m Model) View() string {
 
 		var b strings.Builder
 
-		fmt.Fprintf(&b, "Racer Succefully Entered: %s", m.form.GetString("class"))
+		fmt.Fprintf(&b, "Racer Succefully Entered: %s", m.form.GetString("fmvname"))
 		return s.Status.Margin(0, 1).Padding(1, 2).Width(48).Render(b.String()) + "\n\n"
 	default:
 
 		var class string
-		if m.form.GetString("class") != "" {
-			class = "FMV Name: " + m.form.GetString("class")
+		if m.form.GetString("fmvname") != "" {
+			class = "FMV Name: " + m.form.GetString("fmvname")
 		}
 
 		// Form (left side)
@@ -170,7 +170,7 @@ func (m Model) View() string {
 		var status string
 		{
 			var (
-				buildInfo = "(None)"
+				buildInfo = "Waiting..."
 				role      string
 
 				level string
@@ -182,7 +182,7 @@ func (m Model) View() string {
 				role = "\n\n" + s.StatusHeader.Render("Velocidrone User Info") + "\n" + role
 
 			}
-			if m.form.GetString("class") != "" {
+			if m.form.GetString("fmvname") != "" {
 				buildInfo = fmt.Sprintf("%s\n%s", class, level)
 			}
 
@@ -192,13 +192,13 @@ func (m Model) View() string {
 				Height(lipgloss.Height(form)).
 				Width(statusWidth).
 				MarginLeft(statusMarginLeft).
-				Render(s.StatusHeader.Render("Current Build") + "\n" +
+				Render(s.StatusHeader.Render("FMV Discord Checkin") + "\n" +
 					buildInfo +
 					role)
 		}
 
 		errors := m.form.Errors()
-		header := m.appBoundaryView("Charm Employment Application")
+		header := m.appBoundaryView("FMV RaceNite Manual Entry Form, Baybeeeeeeee!!!")
 		if len(errors) > 0 {
 			header = m.appErrorBoundaryView(m.errorView())
 		}
@@ -252,3 +252,5 @@ func main() {
 		os.Exit(1)
 	}
 }
+
+// Generic Data
