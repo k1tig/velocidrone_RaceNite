@@ -13,7 +13,11 @@ import (
 
 var (
 	docStyle  = lipgloss.NewStyle().Margin(1, 2)
-	itemStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("202"))
+	itemStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("178")).
+			Background(lipgloss.Color("0")).
+			Bold(true).
+			Underline(true)
 )
 
 // represents VD racers qualifying times
@@ -126,9 +130,13 @@ func main() {
 
 	//need to restructure making lists to aaccount for styling
 	r := list.New(vdList, list.NewDefaultDelegate(), 0, 0)
-	r.Styles.Title = itemStyle
+	r.Styles.Title = itemStyle //wrong style name
+
+	f := list.New(checkInList, list.NewDefaultDelegate(), 0, 0)
+	f.Styles.Title = itemStyle //wrong style name
+
 	m := model{racers: r,
-		fmvRacers: list.New(checkInList, list.NewDefaultDelegate(), 0, 0),
+		fmvRacers: f,
 	}
 
 	m.racers.Title = "~Velocidrone Times~"
