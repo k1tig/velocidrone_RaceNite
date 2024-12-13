@@ -5,9 +5,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gocarina/gocsv"
 )
 
 const maxWidth = 80
@@ -66,6 +68,8 @@ type Model struct {
 	styles *Styles
 	form   *huh.Form
 	width  int
+	//VD filtered list of times
+	racers list.Model
 }
 
 func NewModel() Model {
@@ -108,6 +112,8 @@ func NewModel() Model {
 }
 
 func (m Model) Init() tea.Cmd {
+
+	m.getVDsheet()
 	return m.form.Init()
 }
 
@@ -248,6 +254,7 @@ func (m Model) getRole() string {
 }
 
 func main() {
+
 	_, err := tea.NewProgram(NewModel()).Run()
 	if err != nil {
 		fmt.Println("Oh no:", err)
@@ -256,3 +263,51 @@ func main() {
 }
 
 // Generic Data
+
+type Client struct { // Our example struct, you can use "-" to ignore a field
+	PlayerName string `csv:"Player Name"`
+	LapTime    string `csv:"Lap Time"`
+	X_Pos      string `csv:"-"`
+	ModelName  string `csv:"Model Name"`
+	X_Country  string `csv:"-"`
+}
+
+var clients = []*Client{}
+var okRaceClass = []*Client{}
+var vdList = []list.Item{}
+
+type Vdracer struct {
+	name, qualTime, craft string
+}
+
+func (i Vdracer) Title() string       { return i.name }
+func (i Vdracer) Description() string { return i.qualTime + " | " + i.craft }
+func (i Vdracer) FilterValue() string { return i.name }
+
+func (m Model) getVDsheet() tea.Model {
+	raceFile, err := os.OpenFile("race.csv", os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+	defer raceFile.Close()
+	if err := gocsv.UnmarshalFile(raceFile, &clients); err != nil { // Load clients from file
+		panic(err)
+	}
+	for _, client := range clients { //clients are the master qual times
+		if client.ModelName == "TBS Spec" || client.ModelName == "Twig XL 3" {
+			okRaceClass = append(okRaceClass, client) // checkedIn seperates the class of quads from the master list
+		}
+	}
+	// Imports the VD csv to the vdList
+	for _, r := range okRaceClass {
+		vdList = append(vdList, Vdracer{name: r.PlayerName, qualTime: r.LapTime, craft: r.ModelName})
+	}
+	// Adds the list to the model. Important structure to allow for future styling
+	r := list.New(vdList, list.NewDefaultDelegate(), 0, 0)
+	m.racers = r
+
+	if _, err := raceFile.Seek(0, 0); err != nil { // Go to the start of the file
+		panic(err)
+	}
+	return m
+}
