@@ -82,8 +82,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
-		m.racers.SetSize(msg.Width-h, msg.Height-v/2)
-		m.fmvRacers.SetSize(msg.Width-h, msg.Height-v/2)
+		m.racers.SetSize(msg.Width-h, msg.Height-v)
+		m.fmvRacers.SetSize(msg.Width-h, msg.Height-v)
 	}
 	return m, tea.Batch(cmds...)
 
