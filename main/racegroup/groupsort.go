@@ -1,5 +1,12 @@
 package racegroup
 
+import (
+	"fmt"
+	"os"
+
+	"github.com/gocarina/gocsv"
+)
+
 // take a list of racers and returns group sets of racers
 func RaceArray(vdList []string) [][]string {
 	var maxGroupsize = 8
@@ -42,4 +49,59 @@ func RaceArray(vdList []string) [][]string {
 		}
 	}
 	return groupStructure
+}
+
+type Client struct { //struct to recieve data from velocidrone csv
+	PlayerName string `csv:"Player Name"`
+	LapTime    string `csv:"Lap Time"`
+	X_Pos      string `csv:"-"`
+	ModelName  string `csv:"Model Name"`
+	X_Country  string `csv:"-"`
+}
+
+func GetVdRacers(filename string) []*Client {
+
+	var Clients = []*Client{}
+	var OkRaceClass = []*Client{}
+
+	raceFile, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+	defer raceFile.Close()
+	if err := gocsv.UnmarshalFile(raceFile, &Clients); err != nil { // Load clients from file
+		panic(err)
+	}
+	for _, client := range Clients { //clients are the master qual times
+		if client.ModelName == "TBS Spec" || client.ModelName == "Twig XL 3" {
+			OkRaceClass = append(OkRaceClass, client) // checkedIn seperates the class of quads from the master list
+		}
+	}
+	if _, err := raceFile.Seek(0, 0); err != nil { // Go to the start of the file
+		panic(err)
+	}
+	return OkRaceClass
+}
+
+type Racers struct {
+	Racer string `csv:"Display Name"`
+}
+
+// For using the voice chat in FMV discord as base group for pairing.
+func GetFMVvoice() []*Racers {
+
+	var FmvRacers = []*Racers{}
+
+	fmvVoiceFile, err := os.OpenFile("checkin.csv", os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+	defer fmvVoiceFile.Close()
+	if err := gocsv.UnmarshalFile(fmvVoiceFile, &FmvRacers); err != nil { // Load clients from file
+		fmt.Println("Something broke here: %v", err)
+	}
+	if _, err := fmvVoiceFile.Seek(0, 0); err != nil { // Go to the start of the file
+		panic(err)
+	}
+	return FmvRacers
 }

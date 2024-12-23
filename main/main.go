@@ -20,9 +20,14 @@ func main() {
 	for x, i := range finalGroup {
 		fmt.Printf("Group %s: ", groups[x])
 		for _, racer := range i {
-			fmt.Printf("'%s' ", racer)
+			fmt.Println(racer)
+			fmt.Println("")
 		}
-		fmt.Println("")
+	}
+	fmvlist := rg.GetFMVvoice()
+
+	for _, i := range fmvlist {
+		fmt.Println(i.Racer)
 	}
 
 	time.Sleep(30 * time.Second) // just to keep terminal open
