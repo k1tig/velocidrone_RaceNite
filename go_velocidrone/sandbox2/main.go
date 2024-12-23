@@ -31,13 +31,19 @@ var baseStyle = lipgloss.NewStyle().
 
 var docStyle = lipgloss.NewStyle().Margin(1, 2)
 
+var titleStyle = lipgloss.NewStyle().
+	BorderStyle(lipgloss.NormalBorder()).
+	BorderForeground(lipgloss.Color("288"))
+
 type model struct {
 	table table.Model
 	list  list.Model
 	state state
 }
 
-func (m model) Init() tea.Cmd { return nil }
+func (m model) Init() tea.Cmd {
+	return nil
+}
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
@@ -86,7 +92,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 
-	T1 := "\n\n\n\n\n" + baseStyle.Render("   FMV RaceNite Racers Entered \n\n"+m.table.View()) + "\n\n\n" + m.table.HelpView() + "\n"
+	T1 := "\n\n\n\n\n" + titleStyle.Render("FMV RaceNite Racers Entered") + "\n" + baseStyle.Render(m.table.View()) + "\n\n\n" + m.table.HelpView() + "\n"
 	L1 := docStyle.Render(m.list.View())
 	base := lipgloss.JoinHorizontal(lipgloss.Top, L1, T1)
 	return "\n\n\n" + base
@@ -153,6 +159,7 @@ func main() {
 	}
 
 	x := list.New(items, list.NewDefaultDelegate(), 0, 0)
+	x.DisableQuitKeybindings()
 	x.Title = "Select FMV Racers for FMV Roster"
 
 	m := model{table: t,
