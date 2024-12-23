@@ -84,7 +84,8 @@ func GetVdRacers(filename string) []*Client {
 }
 
 type Racers struct {
-	Racer string `csv:"Display Name"`
+	Racer          string `csv:"Display Name"`
+	QualifyingTime string `csv:"="`
 }
 
 // For using the voice chat in FMV discord as base group for pairing.
