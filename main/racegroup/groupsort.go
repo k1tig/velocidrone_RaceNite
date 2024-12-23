@@ -88,17 +88,17 @@ type Racers struct {
 }
 
 // For using the voice chat in FMV discord as base group for pairing.
-func GetFMVvoice() []*Racers {
+func GetFMVvoice(fileCsv string) []*Racers {
 
 	var FmvRacers = []*Racers{}
 
-	fmvVoiceFile, err := os.OpenFile("checkin.csv", os.O_RDWR|os.O_CREATE, os.ModePerm)
+	fmvVoiceFile, err := os.OpenFile(fileCsv, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
 	defer fmvVoiceFile.Close()
 	if err := gocsv.UnmarshalFile(fmvVoiceFile, &FmvRacers); err != nil { // Load clients from file
-		fmt.Println("Something broke here: %v", err)
+		fmt.Println("Something broke with FMV CSV: %v", err) //csv needs to be in same folder as main.go for now
 	}
 	if _, err := fmvVoiceFile.Seek(0, 0); err != nil { // Go to the start of the file
 		panic(err)
