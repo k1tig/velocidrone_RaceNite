@@ -37,12 +37,21 @@ var (
 			Bold(true).
 			Underline(true)
 )
+var check = "✓"
 
 func (i vdracer) Title() string       { return i.name }
 func (i vdracer) Description() string { return i.qTime + " | " + i.craft }
 func (i vdracer) FilterValue() string { return i.name }
 
-func (i fmvracer) Title() string       { return i.name }
+func (i fmvracer) Title() string {
+	if i.qTime != "CHECK IN Please!" {
+		name := i.name + " " + check
+		return name
+	} else {
+		return i.name
+	}
+
+}
 func (i fmvracer) Description() string { return i.qTime }
 func (i fmvracer) FilterValue() string { return i.name }
 
@@ -113,7 +122,7 @@ func main() {
 	}
 
 	for _, f := range fmvRacers {
-		fmvList = append(fmvList, fmvracer{name: f.VelocidronName, qTime: f.QualifyingTime, craft: f.ModelName})
+		fmvList = append(fmvList, fmvracer{name: f.RacerName, qTime: f.QualifyingTime, craft: f.ModelName})
 	}
 
 	vItems := list.New(vdList, list.NewDefaultDelegate(), 0, 0)
@@ -127,7 +136,7 @@ func main() {
 	}
 
 	m.velocidrone.Title = "~Velocidrone Times~"
-	m.fmv.Title = "~Checked in~"
+	m.fmv.Title = "~FMV Preflight Checkin~"
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
 

@@ -121,6 +121,11 @@ func BindLists(vdl []*Client, fmvl []*Racers) []*Racers {
 				bound = append(bound, f)
 				break
 			}
+
+		}
+		if f.VelocidronName == "" {
+			f.QualifyingTime = "CHECK IN Please!"
+			bound = append(bound, f)
 		}
 	}
 	return bound
