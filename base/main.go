@@ -69,6 +69,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "tab":
 			if m.state == fmvView {
 				m.state = vdView
+				return m, cmd
 
 			} else {
 				m.state = fmvView
@@ -133,6 +134,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.velocidrone.SetSize(msg.Width-h, msg.Height-v)
 		m.fmv.SetSize(msg.Width-h, msg.Height-v)
 	}
+	m.velocidrone, cmd = m.velocidrone.Update(msg)
+	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 
 	//m.fmvRacers, cmd = m.fmvRacers.Update(msg)
