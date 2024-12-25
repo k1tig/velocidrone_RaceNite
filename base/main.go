@@ -77,10 +77,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.state == vdView {
 				index := m.fmv.Index()
-
 				item := m.velocidrone.SelectedItem()
 				cmd = m.fmv.InsertItem(index, item)
 				cmds = append(cmds, cmd)
+				m.fmv, cmd = m.fmv.Update(msg)
+				cmds = append(cmds, cmd)
+				return m, tea.Batch(cmds...)
+			}
+		case "a":
+			if m.state == vdView {
+				item := m.velocidrone.SelectedItem()
+				Found := false
+				for _, i := range m.fmv.Items() {
+					if i == item {
+						Found = true
+					}
+				}
+				if !Found {
+					cmd = m.fmv.InsertItem(99999, item)
+					cmds = append(cmds, cmd)
+				}
+
 				m.fmv, cmd = m.fmv.Update(msg)
 				cmds = append(cmds, cmd)
 				return m, tea.Batch(cmds...)
