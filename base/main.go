@@ -75,6 +75,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.state = fmvView
 				return m, cmd
 			}
+		case "enter":
+			if m.state == vdView {
+				item := m.velocidrone.SelectedItem()
+				cmd = m.fmv.InsertItem(99, item)
+
+				cmds = append(cmds, cmd)
+				return m, tea.Batch(cmds...)
+			}
 		}
 		switch m.state {
 		case vdView:
