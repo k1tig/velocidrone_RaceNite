@@ -86,8 +86,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 				if !Found {
+					m.fmv.RemoveItem(index)
 					cmd = m.fmv.InsertItem(index, item)
 					cmds = append(cmds, cmd)
+
 				}
 				m.fmv, cmd = m.fmv.Update(msg)
 				cmds = append(cmds, cmd)
