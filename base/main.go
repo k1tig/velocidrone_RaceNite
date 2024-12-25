@@ -33,7 +33,6 @@ var (
 	docStyle  = lipgloss.NewStyle().Margin(1, 2)
 	itemStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("178")).
-			Background(lipgloss.Color("0")).
 			Bold(true).
 			Underline(true)
 )
@@ -77,11 +76,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "enter":
 			if m.state == vdView {
-				item := m.velocidrone.SelectedItem()
-				cmd = m.fmv.InsertItem(99, item)
+				index := m.fmv.Index()
 
+				item := m.velocidrone.SelectedItem()
+				cmd = m.fmv.InsertItem(index, item)
+				cmds = append(cmds, cmd)
+				m.fmv, cmd = m.fmv.Update(msg)
 				cmds = append(cmds, cmd)
 				return m, tea.Batch(cmds...)
+			}
+		case "r":
+			if m.state == fmvView {
+				index := m.fmv.Index()
+				m.fmv.RemoveItem(index)
 			}
 		}
 		switch m.state {
