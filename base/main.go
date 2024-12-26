@@ -92,6 +92,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
+
+	case tea.WindowSizeMsg:
+		h, v := docStyle.GetFrameSize()
+		m.velocidrone.SetSize(msg.Width-h, msg.Height-v)
+
+		m.fmv.SetSize(msg.Width-h, msg.Height-v)
+
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.keys.selectState):
@@ -175,10 +182,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		}
 
-	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
-		m.velocidrone.SetSize(msg.Width-h, msg.Height-v)
-		m.fmv.SetSize(msg.Width-h, msg.Height-v)
 	}
 	m.velocidrone, cmd = m.velocidrone.Update(msg)
 	cmds = append(cmds, cmd)
@@ -188,12 +191,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+
 	m.velocidrone.DisableQuitKeybindings()
 	m.fmv.DisableQuitKeybindings()
-
 	left := docStyle.Render(m.velocidrone.View())
 	right := docStyle.Render(m.fmv.View())
-	body := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
+
+	body := lipgloss.JoinHorizontal(lipgloss.Center, left, right)
 	return body
 }
 
