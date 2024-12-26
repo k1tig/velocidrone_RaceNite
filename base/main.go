@@ -18,7 +18,6 @@ type fmvracer struct {
 	name, qTime, craft string
 }
 type state uint
-
 type listKeyMap struct {
 	addRacer     key.Binding
 	replaceRacer key.Binding
@@ -50,17 +49,17 @@ func newListKeyMap() *listKeyMap {
 	}
 }
 
+const (
+	vdView state = iota
+	fmvView
+)
+
 type model struct {
 	keys        *listKeyMap
 	velocidrone list.Model
 	fmv         list.Model
 	state       state
 }
-
-const (
-	vdView state = iota
-	fmvView
-)
 
 var (
 	docStyle  = lipgloss.NewStyle().Margin(1, 2)
@@ -82,7 +81,6 @@ func (i fmvracer) Title() string {
 	} else {
 		return i.name
 	}
-
 }
 func (i fmvracer) Description() string { return i.qTime }
 func (i fmvracer) FilterValue() string { return i.name }
@@ -95,9 +93,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if m.fmv.FilterState() == list.Filtering || m.velocidrone.FilterState() == list.Filtering {
-			break
-		}
 		switch {
 		case key.Matches(msg, m.keys.selectState):
 			if m.state == fmvView {
@@ -116,6 +111,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		switch m.state {
 		case vdView:
+			if m.fmv.FilterState() == list.Filtering || m.velocidrone.FilterState() == list.Filtering {
+				break
+			}
 			switch {
 			case key.Matches(msg, m.keys.replaceRacer):
 				index := m.fmv.Index()
@@ -134,7 +132,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.fmv, cmd = m.fmv.Update(msg)
 				cmds = append(cmds, cmd)
 				return m, tea.Batch(cmds...)
-
 			case key.Matches(msg, m.keys.addRacer):
 				item := m.velocidrone.SelectedItem()
 				Found := false
@@ -152,6 +149,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Batch(cmds...)
 			}
 		case fmvView:
+			if m.fmv.FilterState() == list.Filtering || m.velocidrone.FilterState() == list.Filtering {
+				break
+			}
 			switch {
 			case key.Matches(msg, m.keys.removeRacer):
 				index := m.fmv.Index()
@@ -182,10 +182,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	m.velocidrone, cmd = m.velocidrone.Update(msg)
 	cmds = append(cmds, cmd)
+	m.fmv, cmd = m.fmv.Update(msg)
+	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
-
-	//m.fmvRacers, cmd = m.fmvRacers.Update(msg)
-	//m.racers, cmd = m.racers.Update(msg)
 }
 
 func (m model) View() string {
@@ -199,7 +198,6 @@ func (m model) View() string {
 }
 
 func main() {
-
 	listkeys := newListKeyMap()
 	vdList := []list.Item{}
 	fmvList := []list.Item{}
@@ -211,7 +209,6 @@ func main() {
 	for _, v := range vdRacers {
 		vdList = append(vdList, vdracer{name: v.VelocidronName, qTime: v.QualifyingTime, craft: v.ModelName})
 	}
-
 	for _, f := range fmvRacers {
 		fmvList = append(fmvList, fmvracer{name: f.RacerName, qTime: f.QualifyingTime, craft: f.ModelName})
 	}
@@ -239,15 +236,12 @@ func main() {
 		fmv:  fmvItems,
 		keys: listkeys,
 	}
-
 	m.velocidrone.Title = "~Velocidrone Times~"
 	m.fmv.Title = "~FMV Preflight Checkin~"
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
-
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
-
 	}
 }
