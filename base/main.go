@@ -5,6 +5,7 @@ import (
 	"os"
 
 	rt "abc.com/base/racetools"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -18,7 +19,33 @@ type fmvracer struct {
 }
 type state uint
 
+type listKeyMap struct {
+	addRacer     key.Binding
+	replaceRacer key.Binding
+	removeRacer  key.Binding
+}
+
+func newListKeyMap() *listKeyMap {
+	return &listKeyMap{
+		addRacer: key.NewBinding(
+			key.WithKeys("a"),
+			key.WithHelp("a", "add to FMV"),
+		),
+
+		replaceRacer: key.NewBinding(
+			key.WithKeys("r"),
+			key.WithHelp("r,", "replace FMV selection"),
+		),
+
+		removeRacer: key.NewBinding(
+			key.WithKeys("d"),
+			key.WithHelp("d", "delete racer"),
+		),
+	}
+}
+
 type model struct {
+	keys        *listKeyMap
 	velocidrone list.Model
 	fmv         list.Model
 	state       state
@@ -62,21 +89,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c":
-			return m, tea.Quit
-		//filler until disable esc key
-		case "tab":
-			if m.state == fmvView {
-				m.state = vdView
-				return m, cmd
+		if m.fmv.FilterState() == list.Filtering || m.velocidrone.FilterState() == list.Filtering {
+			break
+		}
 
-			} else {
-				m.state = fmvView
-				return m, cmd
-			}
-		case "enter":
-			if m.state == vdView {
+		switch m.state {
+		case vdView:
+			switch {
+			case key.Matches(msg, m.keys.replaceRacer):
 				index := m.fmv.Index()
 				item := m.velocidrone.SelectedItem()
 				Found := false
@@ -94,9 +114,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.fmv, cmd = m.fmv.Update(msg)
 				cmds = append(cmds, cmd)
 				return m, tea.Batch(cmds...)
-			}
-		case "a":
-			if m.state == vdView {
+
+			case key.Matches(msg, m.keys.addRacer):
 				item := m.velocidrone.SelectedItem()
 				Found := false
 				for _, i := range m.fmv.Items() {
@@ -108,16 +127,33 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmd = m.fmv.InsertItem(99999, item)
 					cmds = append(cmds, cmd)
 				}
-
 				m.fmv, cmd = m.fmv.Update(msg)
 				cmds = append(cmds, cmd)
 				return m, tea.Batch(cmds...)
 			}
-		case "r":
-			if m.state == fmvView {
+		case fmvView:
+			switch {
+			case key.Matches(msg, m.keys.removeRacer):
 				index := m.fmv.Index()
 				m.fmv.RemoveItem(index)
 			}
+
+		}
+
+		switch msg.String() {
+		case "q", "ctrl+c":
+			return m, tea.Quit
+		//filler until disable esc key
+		case "tab":
+			if m.state == fmvView {
+				m.state = vdView
+				return m, cmd
+
+			} else {
+				m.state = fmvView
+				return m, cmd
+			}
+
 		}
 		switch m.state {
 		case vdView:
@@ -155,6 +191,8 @@ func (m model) View() string {
 }
 
 func main() {
+
+	listkeys := newListKeyMap()
 	vdList := []list.Item{}
 	fmvList := []list.Item{}
 
@@ -171,13 +209,25 @@ func main() {
 	}
 
 	vItems := list.New(vdList, list.NewDefaultDelegate(), 0, 0)
+	vItems.AdditionalFullHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			listkeys.addRacer,
+			listkeys.replaceRacer,
+		}
+	}
 	vItems.Styles.Title = itemStyle //wrong style name
 
 	fmvItems := list.New(fmvList, list.NewDefaultDelegate(), 0, 0)
 	fmvItems.Styles.Title = itemStyle //wrong style name
+	fmvItems.AdditionalFullHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			listkeys.removeRacer,
+		}
+	}
 
 	m := model{velocidrone: vItems,
-		fmv: fmvItems,
+		fmv:  fmvItems,
+		keys: listkeys,
 	}
 
 	m.velocidrone.Title = "~Velocidrone Times~"
