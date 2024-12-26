@@ -23,6 +23,7 @@ type listKeyMap struct {
 	addRacer     key.Binding
 	replaceRacer key.Binding
 	removeRacer  key.Binding
+	selectState  key.Binding
 }
 
 func newListKeyMap() *listKeyMap {
@@ -40,6 +41,11 @@ func newListKeyMap() *listKeyMap {
 		removeRacer: key.NewBinding(
 			key.WithKeys("d"),
 			key.WithHelp("d", "delete racer"),
+		),
+
+		selectState: key.NewBinding(
+			key.WithKeys("tab"),
+			key.WithHelp("tab", "switch lists"),
 		),
 	}
 }
@@ -92,7 +98,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.fmv.FilterState() == list.Filtering || m.velocidrone.FilterState() == list.Filtering {
 			break
 		}
+		switch {
+		case key.Matches(msg, m.keys.selectState):
+			if m.state == fmvView {
+				m.state = vdView
+				m.velocidrone, cmd = m.velocidrone.Update(msg)
+				cmds = append(cmds, cmd)
+				return m, tea.Batch(cmds...)
+			}
+			if m.state == vdView {
+				m.state = fmvView
+				m.fmv, cmd = m.fmv.Update(msg)
+				cmds = append(cmds, cmd)
+				return m, tea.Batch(cmds...)
 
+			}
+		}
 		switch m.state {
 		case vdView:
 			switch {
@@ -109,7 +130,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.fmv.RemoveItem(index)
 					cmd = m.fmv.InsertItem(index, item)
 					cmds = append(cmds, cmd)
-
 				}
 				m.fmv, cmd = m.fmv.Update(msg)
 				cmds = append(cmds, cmd)
@@ -137,23 +157,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				index := m.fmv.Index()
 				m.fmv.RemoveItem(index)
 			}
-
 		}
-
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
-		//filler until disable esc key
-		case "tab":
-			if m.state == fmvView {
-				m.state = vdView
-				return m, cmd
-
-			} else {
-				m.state = fmvView
-				return m, cmd
-			}
-
+			//filler until disable esc key
 		}
 		switch m.state {
 		case vdView:
@@ -213,6 +221,7 @@ func main() {
 		return []key.Binding{
 			listkeys.addRacer,
 			listkeys.replaceRacer,
+			listkeys.selectState,
 		}
 	}
 	vItems.Styles.Title = itemStyle //wrong style name
@@ -222,6 +231,7 @@ func main() {
 	fmvItems.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listkeys.removeRacer,
+			listkeys.selectState,
 		}
 	}
 
