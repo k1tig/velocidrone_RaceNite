@@ -84,6 +84,10 @@ var (
 			Foreground(lipgloss.Color("178")).
 			Bold(true).
 			Underline(true)
+	bluredStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("239")).
+			Bold(true).
+			Underline(true)
 	magentaStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("201")).
 			Bold(true).
@@ -125,11 +129,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.selectState):
 			if m.state == fmvView {
 				m.state = vdView
+				m.velocidrone.Styles.Title = itemStyle
+				m.fmv.Styles.Title = bluredStyle
+
 				m.velocidrone, cmd = m.velocidrone.Update(msg)
 				cmds = append(cmds, cmd)
 				return m, tea.Batch(cmds...)
 			}
 			if m.state == vdView {
+				m.velocidrone.Styles.Title = bluredStyle
+				m.fmv.Styles.Title = itemStyle
+
 				m.state = fmvView
 				m.fmv, cmd = m.fmv.Update(msg)
 				cmds = append(cmds, cmd)
@@ -193,6 +203,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.table.SetRows(rows)
 				m.state = tableView
+			}
+		case tableView:
+			switch msg.String() {
+			case "tab":
+				m.state = fmvView
+				m.fmv, cmd = m.fmv.Update(msg)
+				cmds = append(cmds, cmd)
+				return m, tea.Batch(cmds...)
 			}
 		}
 		switch msg.String() {
@@ -268,7 +286,7 @@ func main() {
 			listkeys.selectState,
 		}
 	}
-	vItems.Styles.Title = itemStyle //wrong style name
+	vItems.Styles.Title = bluredStyle //wrong style name
 
 	fmvItems := list.New(fmvList, list.NewDefaultDelegate(), 0, 0)
 	fmvItems.Styles.Title = itemStyle //wrong style name
@@ -309,6 +327,7 @@ func main() {
 		keys:       listkeys,
 		masterList: vdRacers,
 		table:      t,
+		state:      fmvView,
 	}
 	m.velocidrone.Title = "~Velocidrone Times~"
 	m.fmv.Title = "~FMV Preflight Checkin~"
