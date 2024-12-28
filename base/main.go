@@ -22,6 +22,7 @@ type fmvracer struct {
 }
 
 type state uint
+
 type listKeyMap struct {
 	addRacer     key.Binding
 	replaceRacer key.Binding
@@ -67,6 +68,7 @@ const (
 
 type model struct {
 	table           []table.Model
+	tablestate      int
 	masterList      []*rt.Client
 	checkedInRacers []string
 	keys            *listKeyMap
@@ -223,12 +225,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.table[i].SetRows(rows)
 					}
 				}
+				for i := 1; i < 4; i++ {
+					m.table[i].Blur()
+				}
 				m.state = tableView
 			}
 		case tableView:
 			switch msg.String() {
 			case "tab":
 				m.state = fmvView
+				m.tablestate = 0
 				m.fmv, cmd = m.fmv.Update(msg)
 				cmds = append(cmds, cmd)
 
@@ -237,7 +243,30 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.table[i].SetRows(clearRows)
 				}
 				return m, tea.Batch(cmds...)
+
+			case "right":
+				i := m.tablestate
+				m.table[i].Blur()
+				if m.tablestate != 4 {
+					i++
+				} else {
+					i = 0
+				}
+				m.tablestate = i
+				m.table[i].Focus()
+
+			case "left":
+				i := m.tablestate
+				m.table[i].Blur()
+				if m.tablestate != 0 {
+					i--
+				} else {
+					i = 4
+				}
+				m.tablestate = i
+				m.table[i].Focus()
 			}
+
 		}
 		switch msg.String() {
 		case "q", "ctrl+c":
@@ -254,12 +283,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
 		case tableView:
-			m.table[0], cmd = m.table[0].Update(msg)
-			cmds = append(cmds, cmd)
-			m.table[1], cmd = m.table[1].Update(msg)
-			cmds = append(cmds, cmd)
-			m.table[2], cmd = m.table[2].Update(msg)
-			cmds = append(cmds, cmd)
+			for i := 0; i < 4; i++ {
+				m.table[i], cmd = m.table[i].Update(msg)
+				cmds = append(cmds, cmd)
+			}
+
+			/*
+				m.table[0], cmd = m.table[0].Update(msg)
+				cmds = append(cmds, cmd)
+				m.table[1], cmd = m.table[1].Update(msg)
+				cmds = append(cmds, cmd)
+				m.table[2], cmd = m.table[2].Update(msg)
+				cmds = append(cmds, cmd)
+			*/
 
 			return m, tea.Batch(cmds...)
 		}
@@ -383,6 +419,7 @@ func main() {
 		state:      fmvView,
 		table:      tables{t1, t2, t3, t4, t5},
 	}
+
 	m.velocidrone.Title = "~Velocidrone Times~"
 	m.fmv.Title = "~FMV Preflight Checkin~"
 
