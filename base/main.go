@@ -212,31 +212,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.fmv.RemoveItem(index)
 
 			case key.Matches(msg, m.keys.submitList):
+				var clearRows []table.Row
+
+				for i := 0; i < 4; i++ {
+					m.table[i].SetRows(clearRows)
+				}
 				m.checkedInRacers = m.checkIn()
 				list := m.addRacingList()
 				brackets := rt.RaceArray(list)
-
-				if brackets[0] != nil {
+				indexLen := len(brackets)
+				for i := 0; i < indexLen; i++ {
 					rows := []table.Row{}
-					for _, i := range brackets[0] {
-						rows = append(rows, i)
-						m.table[0].SetRows(rows)
-					}
-				}
-
-				if brackets[1] != nil {
-					rows := []table.Row{}
-					for _, i := range brackets[1] {
-						rows = append(rows, i)
-						m.table[1].SetRows(rows)
-					}
-				}
-
-				if brackets[2] != nil {
-					rows := []table.Row{}
-					for _, i := range brackets[2] {
-						rows = append(rows, i)
-						m.table[2].SetRows(rows)
+					for _, x := range brackets[i] {
+						rows = append(rows, x)
+						m.table[i].SetRows(rows)
 					}
 				}
 				m.state = tableView
