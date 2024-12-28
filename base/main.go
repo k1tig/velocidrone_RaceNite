@@ -190,7 +190,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				item := m.velocidrone.SelectedItem()
 				Found := false
 				for _, i := range m.fmv.Items() {
-					if i == item {
+					if i.FilterValue() == item.FilterValue() {
 						Found = true
 					}
 				}
@@ -212,11 +212,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.fmv.RemoveItem(index)
 
 			case key.Matches(msg, m.keys.submitList):
-				var clearRows []table.Row
-
-				for i := 0; i < 4; i++ {
-					m.table[i].SetRows(clearRows)
-				}
 				m.checkedInRacers = m.checkIn()
 				list := m.addRacingList()
 				brackets := rt.RaceArray(list)
@@ -236,6 +231,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.state = fmvView
 				m.fmv, cmd = m.fmv.Update(msg)
 				cmds = append(cmds, cmd)
+
+				var clearRows []table.Row
+				for i := 0; i < 4; i++ {
+					m.table[i].SetRows(clearRows)
+				}
 				return m, tea.Batch(cmds...)
 			}
 		}
