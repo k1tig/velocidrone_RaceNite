@@ -66,7 +66,7 @@ const (
 )
 
 type model struct {
-	table           table.Model
+	table           []table.Model
 	masterList      []*rt.Client
 	checkedInRacers []string
 	keys            *listKeyMap
@@ -90,6 +90,22 @@ var (
 			Underline(true)
 	magentaStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("201")).
+			Bold(true).
+			Underline(true)
+	goldStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("220")).
+			Bold(true).
+			Underline(true)
+	cyanStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("123")).
+			Bold(true).
+			Underline(true)
+	orangStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("208")).
+			Bold(true).
+			Underline(true)
+	greenStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("34")).
 			Bold(true).
 			Underline(true)
 )
@@ -194,14 +210,35 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.removeRacer):
 				index := m.fmv.Index()
 				m.fmv.RemoveItem(index)
+
 			case key.Matches(msg, m.keys.submitList):
 				m.checkedInRacers = m.checkIn()
 				list := m.addRacingList()
-				rows := []table.Row{}
-				for _, i := range list {
-					rows = append(rows, i)
+				brackets := rt.RaceArray(list)
+
+				if brackets[0] != nil {
+					rows := []table.Row{}
+					for _, i := range brackets[0] {
+						rows = append(rows, i)
+						m.table[0].SetRows(rows)
+					}
 				}
-				m.table.SetRows(rows)
+
+				if brackets[1] != nil {
+					rows := []table.Row{}
+					for _, i := range brackets[1] {
+						rows = append(rows, i)
+						m.table[1].SetRows(rows)
+					}
+				}
+
+				if brackets[2] != nil {
+					rows := []table.Row{}
+					for _, i := range brackets[2] {
+						rows = append(rows, i)
+						m.table[2].SetRows(rows)
+					}
+				}
 				m.state = tableView
 			}
 		case tableView:
@@ -228,8 +265,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
 		case tableView:
-			m.table, cmd = m.table.Update(msg)
+			m.table[0], cmd = m.table[0].Update(msg)
 			cmds = append(cmds, cmd)
+			m.table[1], cmd = m.table[1].Update(msg)
+			cmds = append(cmds, cmd)
+			m.table[2], cmd = m.table[2].Update(msg)
+			cmds = append(cmds, cmd)
+
 			return m, tea.Batch(cmds...)
 		}
 
@@ -254,9 +296,30 @@ func (m model) View() string {
 		body = lipgloss.JoinHorizontal(lipgloss.Center, left, right)
 		return body
 	case m.state == tableView:
-		header := magentaStyle.Render("Magenta Group:")
-		body = baseStyle.Render(m.table.View())
-		body = lipgloss.JoinVertical(lipgloss.Center, header, body)
+		goldHeader := goldStyle.Render("Gold Group:")
+		goldBody := baseStyle.Render(m.table[0].View())
+		gold := lipgloss.JoinVertical(lipgloss.Center, goldHeader, goldBody)
+
+		mHeader := magentaStyle.Render("Magenta Group:")
+		mBody := baseStyle.Render(m.table[1].View())
+		magenta := lipgloss.JoinVertical(lipgloss.Center, mHeader, mBody)
+
+		cyanHeader := cyanStyle.Render("Cyan Group:")
+		cyanBody := baseStyle.Render(m.table[2].View())
+		cyan := lipgloss.JoinVertical(lipgloss.Center, cyanHeader, cyanBody)
+
+		orangeHeader := orangStyle.Render("Orange Group:")
+		orangeBody := baseStyle.Render(m.table[3].View())
+		orange := lipgloss.JoinVertical(lipgloss.Center, orangeHeader, orangeBody)
+
+		greenHeader := greenStyle.Render("Green Group:")
+		greenBody := baseStyle.Render(m.table[4].View())
+		green := lipgloss.JoinVertical(lipgloss.Center, greenHeader, greenBody)
+
+		r1 := lipgloss.JoinHorizontal(lipgloss.Center, gold, magenta, cyan)
+		r2 := lipgloss.JoinHorizontal(lipgloss.Center, orange, green)
+
+		body = lipgloss.JoinVertical(lipgloss.Center, r1, r2)
 		return body
 	}
 	return body
@@ -321,13 +384,15 @@ func main() {
 		Background(lipgloss.Color("57")).
 		Bold(false)
 	t.SetStyles(s)
+	t1, t2, t3, t4, t5 := t, t, t, t, t
+	type tables []table.Model
 
 	m := model{velocidrone: vItems,
 		fmv:        fmvItems,
 		keys:       listkeys,
 		masterList: vdRacers,
-		table:      t,
 		state:      fmvView,
+		table:      tables{t1, t2, t3, t4, t5},
 	}
 	m.velocidrone.Title = "~Velocidrone Times~"
 	m.fmv.Title = "~FMV Preflight Checkin~"
@@ -357,7 +422,6 @@ func (m model) addRacingList() [][]string {
 	}
 
 	var cleanRacers []cleanRacer
-
 	var racers []*rt.Client
 
 	for _, i := range m.checkedInRacers {

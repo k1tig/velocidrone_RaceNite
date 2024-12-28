@@ -67,7 +67,7 @@ func GetFMVvoice(fileCsv string) []*Racers {
 	return FmvRacers
 }
 
-func RaceArray(vdList []string) [][]string {
+func RaceArray(vdList [][]string) [][][]string {
 	var maxGroupsize = 8
 	var grouplength int
 	var totalGroups int
@@ -91,7 +91,7 @@ func RaceArray(vdList []string) [][]string {
 		}
 	}
 
-	var groupStructure = make([][]string, totalGroups)
+	var groupStructure = make([][][]string, totalGroups)
 	var c int
 	x := modulus
 
