@@ -6,19 +6,12 @@ import (
 	"log"
 
 	"github.com/gorilla/websocket"
+	"golang.org/x/exp/maps"
 )
 
-/*
-type racer struct {
-	Finished string `json:"finished"`
-	Gate     string `json:"gate"`
-	Lap      string `json:"lap"`
-	Position string `json:"position"`
-	Time     string `json:"time"`
-	Colour   string `json:"colour"`
-}*/
-
-var data map[string]interface{}
+var rxMsg map[string]json.RawMessage
+var racedata map[string]json.RawMessage
+var person map[string]string
 
 func main() {
 	dialer := websocket.Dialer{}
@@ -35,10 +28,40 @@ func main() {
 			return
 		}
 
-		if err := json.Unmarshal([]byte(message), &data); err != nil {
+		if err := json.Unmarshal(message, &rxMsg); err != nil {
 			log.Fatal(err)
-
 		}
-		fmt.Println(data["racestatus"])
+		topKey := maps.Keys(rxMsg)
+		header := topKey[0]
+
+		switch {
+		case header == "racedata":
+			if err := json.Unmarshal(rxMsg[header], &racedata); err != nil {
+				log.Fatal(err)
+			}
+
+			x := maps.Keys(racedata)
+			racerName := x[0]
+
+			if err := json.Unmarshal(racedata[racerName], &person); err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("Racer's Name: %s\n", racerName)
+			for k, v := range person {
+				fmt.Printf("%s: %s\n", k, v)
+			}
+			println()
+		case header == "racestatus":
+			return
+		case header == "racetype":
+			return
+		case header == "countdown":
+			return
+		}
+
+		//x := maps.Keys(data["racedata"])
+		clear(message)
 	}
 }
+
+//clear()
