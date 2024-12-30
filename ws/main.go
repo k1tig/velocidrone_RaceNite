@@ -52,11 +52,11 @@ func main() {
 			}
 			println()
 		case header == "racestatus":
-			return
+
 		case header == "racetype":
-			return
+
 		case header == "countdown":
-			return
+
 		}
 
 		//x := maps.Keys(data["racedata"])
