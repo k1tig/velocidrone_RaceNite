@@ -1,20 +1,30 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 
 	"github.com/gorilla/websocket"
 )
 
-type Client struct {
-}
+/*
+type racer struct {
+	Finished string `json:"finished"`
+	Gate     string `json:"gate"`
+	Lap      string `json:"lap"`
+	Position string `json:"position"`
+	Time     string `json:"time"`
+	Colour   string `json:"colour"`
+}*/
+
+var data map[string]interface{}
 
 func main() {
 	dialer := websocket.Dialer{}
 	conn, _, err := dialer.Dial("ws://192.168.68.83:60003/velocidrone", nil)
 	if err != nil {
-		fmt.Errorf("Error: %s", err)
+		log.Panic(err)
 	}
 	defer conn.Close()
 
@@ -24,7 +34,11 @@ func main() {
 			log.Println("read:", err)
 			return
 		}
-		fmt.Printf("Received: %s\n", message)
-	}
 
+		if err := json.Unmarshal([]byte(message), &data); err != nil {
+			log.Fatal(err)
+
+		}
+		fmt.Println(data["racestatus"])
+	}
 }
