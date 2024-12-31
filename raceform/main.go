@@ -19,7 +19,7 @@ func main() {
 
 	var (
 		group string
-		racer string
+		racer []string
 	)
 
 	form := huh.NewForm(
@@ -29,7 +29,7 @@ func main() {
 				Value(&group).
 				Title("Split 1 - Heat 1").
 				Height(8),
-			huh.NewSelect[string]().
+			huh.NewMultiSelect[string]().
 				Value(&racer).
 				Height(8).
 				TitleFunc(func() string {
@@ -86,7 +86,7 @@ var racers = map[string][]string{
 		"Mayan_Hawk: 110.308",
 		".MrE.: 87.112",
 		"XaeroFPV: 89.162",
-		"Zikefire: 92.371",
+		"Treeseeker: MIA",
 	},
 	"Teal":   {},
 	"Orange": {},
