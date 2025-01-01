@@ -53,7 +53,6 @@ func main() {
 				Title("Races").
 				OptionsFunc(func() []huh.Option[string] {
 					s := heatDict[group]
-					time.Sleep(500 * time.Millisecond) // seems to be needed to allow optiont to load
 					return huh.NewOptions(s...)
 				}, &group /* only this function when `group` changes */),
 
