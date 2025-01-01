@@ -6,15 +6,28 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
+	"golang.org/x/exp/maps"
 )
 
-type racer string
-type Racers []racer
-
-var split1, split2, split3 bool
-var names = Racers{"asiy", "MOTORDRONEX", "eedok", "uGellin", "MGescapades", "RoflCopter!", "AP3X"}
-
 func main() {
+	var r = []string{"asiy", "MOTODRONEX", "eedok", "uGeLLin", "andyy", "MGescapades", "RoflCopter!", "AP3X"}
+	var t1 = []string{"84.132", "84.135", "86.167", "84.132", "85.236", "88.968", "89.003", "92.542"}
+	var t2 = []string{"83.142", "81.735", "85.437", "94.692", "89.111", "87.934", "85.303", "96.662"}
+
+	var dirtyTime1 []string
+	var dirtyTime2 []string
+	for x := 0; x < len(r)-1; x++ {
+		formRTimes := fmt.Sprintf("%s: %s", r[x], t1[x])
+		dirtyTime1 = append(dirtyTime1, formRTimes)
+	}
+	for x := 0; x < len(r)-1; x++ {
+		formRTimes := fmt.Sprintf("%s: %s", r[x], t2[x])
+		dirtyTime2 = append(dirtyTime2, formRTimes)
+	}
+
+	heatDict := make(map[string][]string)
+	heatDict["Gold S1R1"] = dirtyTime1
+	heatDict["Gold S1R2"] = dirtyTime2
 	log.SetReportTimestamp(false)
 
 	var (
@@ -25,29 +38,24 @@ func main() {
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
-				Options(huh.NewOptions("Gold", "Magenta", "Teal", "Orange", "Green")...).
+				//Options(huh.NewOptions("United States", "Canada", "Mexico")...).
+				OptionsFunc(func() []huh.Option[string] {
+					Keys := maps.Keys(heatDict)
+					return huh.NewOptions(Keys...)
+				}, &group /* only this function when `country` changes */).
 				Value(&group).
-				Title("Split 1 - Heat 1").
-				Height(8),
+				Title("Races").
+				Height(5),
+
 			huh.NewMultiSelect[string]().
 				Value(&racer).
 				Height(8).
-				TitleFunc(func() string {
-					switch group {
-					case "Gold":
-						return "Gold Results"
-					case "Magenta":
-						return "Magenta Results"
-					default:
-						return "-"
-					}
-				}, &group).
+				Title("Races").
 				OptionsFunc(func() []huh.Option[string] {
-					s := racers[group]
-					// simulate API call
-					time.Sleep(10 * time.Millisecond)
+					s := heatDict[group]
 					return huh.NewOptions(s...)
 				}, &group /* only this function when `group` changes */),
+
 			huh.NewConfirm().
 				Title("Submit Entries").
 				Affirmative("Submit").
@@ -66,29 +74,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%s, %s\n", racer, group)
-}
-
-var racers = map[string][]string{
-	"Gold": {
-		"asiy: 80.639",
-		"MOTODRONX: 94.757",
-		"eedok: 82873",
-		"UGeLLin: 83.046",
-		"andyy: 87.688",
-		"Mgescapades: 84894",
-		"RoflCopter: 84.813",
-		"AP3X: 87.058",
-	},
-	"Magenta": {
-		"Not Sure: 85.257",
-		"Barnyard: 87.378",
-		"Mayan_Hawk: 110.308",
-		".MrE.: 87.112",
-		"XaeroFPV: 89.162",
-		"Treeseeker: MIA",
-	},
-	"Teal":   {},
-	"Orange": {},
-	"Green":  {},
+	fmt.Printf("\n\nEntered: %s\n\n", group)
+	for _, i := range racer {
+		fmt.Println(i)
+	}
+	time.Sleep(10 * time.Second)
 }
