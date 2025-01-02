@@ -145,3 +145,22 @@ func (m model) buildTable() []table.Row {
 	return newRows
 
 }
+
+//Function to update racers from a list
+/*
+func (m model) qualifying() {
+	type vd struct {
+		name string
+		time string
+	}
+	var vdList []vd
+	for e, i := range m.racers {
+		for _, x := range vdList {
+			if i.name == x.name {
+				m.racers[e].r1 = x.time
+			}
+		}
+
+	}
+}
+*/
