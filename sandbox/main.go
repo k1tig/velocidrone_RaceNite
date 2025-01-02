@@ -105,12 +105,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			x := m.buildTable()
 			m.Split_1.SetRows(x)
 
+		case "r":
+			var e int
+			for i, x := range m.racers {
+				if x.name == "eedok" {
+					e = i
+				}
+			}
+			m.racers[e].r1 = "69"
+			x := m.buildTable()
+			m.Split_1.SetRows(x)
+
 		}
+
 	}
 	m.Split_1, cmd = m.Split_1.Update(msg)
 	return m, cmd
 }
 func (m model) View() string {
+
 	return baseStyle.Render(m.Split_1.View()) + "\n"
 }
 
