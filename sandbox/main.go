@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	rt "abc.com/sandbox/racetools"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -33,6 +34,7 @@ type model struct {
 }
 
 func initModel() model {
+
 	columns := []table.Column{
 		{Title: "Racer", Width: 10},
 		{Title: "Bracket Time", Width: 14},
@@ -115,7 +117,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.racers[e].r1 = "69"
 			x := m.buildTable()
 			m.Split_1.SetRows(x)
+		case "e":
+			vdRacers := rt.GetVdRacers("race.csv")
+			for e, i := range m.racers {
+				for _, x := range vdRacers {
+					if i.name == x.VelocidronName {
+						var nulCheck racer // represents empty value of type racer.B1 (qualifying time 1)
+						if m.racers[e].B1 == nulCheck.B1 {
+							if x.ModelName == "TBS Spec" || x.ModelName == "Twig XL 3" {
+								m.racers[e].B1 = x.QualifyingTime
+								break
+							}
 
+						}
+					}
+				}
+			}
+
+			x := m.buildTable()
+			m.Split_1.SetRows(x)
 		}
 
 	}
@@ -147,20 +167,3 @@ func (m model) buildTable() []table.Row {
 }
 
 //Function to update racers from a list
-/*
-func (m model) qualifying() {
-	type vd struct {
-		name string
-		time string
-	}
-	var vdList []vd
-	for e, i := range m.racers {
-		for _, x := range vdList {
-			if i.name == x.name {
-				m.racers[e].r1 = x.time
-			}
-		}
-
-	}
-}
-*/
