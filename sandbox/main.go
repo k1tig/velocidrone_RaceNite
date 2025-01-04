@@ -7,6 +7,7 @@ import (
 	rt "abc.com/sandbox/racetools"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -15,6 +16,8 @@ var (
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("240"))
 )
+
+const maxWidth = 80
 
 type racer struct {
 	name            string
@@ -28,12 +31,27 @@ type racer struct {
 	B1, B2, B3      string
 }
 
-type model struct {
+type Model struct {
 	Split_1 table.Model
 	racers  []racer
+	form    *huh.Form
+
+	width  int
+	lg     *lipgloss.Renderer
+	styles *Styles
 }
 
-func initModel() model {
+type Styles struct {
+	Base,
+	HeaderText,
+	Status,
+	StatusHeader,
+	Highlight,
+	ErrorHeaderText,
+	Help lipgloss.Style
+}
+
+func initModel() Model {
 
 	columns := []table.Column{
 		{Title: "Racer", Width: 10},
@@ -80,15 +98,54 @@ func initModel() model {
 		rList = append(rList, i)
 	}
 
-	m := model{t, rList}
+	m := Model{width: maxWidth}
 
+	m.lg = lipgloss.DefaultRenderer()
+	m.styles = NewStyles(m.lg)
+
+	m.racers = rList
+	m.Split_1 = t
+	m.form = huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Key("class").
+				Options(huh.NewOptions("Gold", "Magenta", "Teel")...).
+				Title("Race Group").
+				Description("Race bracket to be entered"),
+
+			huh.NewSelect[string]().
+				Key("level").
+				Options(huh.NewOptions("asiy: 60718", "eedok: 69", "uGellin: 61.718", "anddy: 64.551")...).
+				Title("Heats").
+				Description("How slow you were last round"),
+
+			huh.NewConfirm().
+				Key("done").
+				Title("All done?").
+				Validate(func(v bool) error {
+					if !v {
+						return fmt.Errorf("Welp, finish up then")
+					}
+					return nil
+				}).
+				Affirmative("Yep").
+				Negative("Wait, no"),
+		),
+	).
+		WithWidth(45).
+		WithShowHelp(false).
+		WithShowErrors(false)
 	return m
 }
-func (m model) Init() tea.Cmd { return nil }
+func (m Model) Init() tea.Cmd {
+	return m.form.Init()
+}
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = min(msg.Width, maxWidth) - m.styles.Base.GetHorizontalFrameSize()
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc":
@@ -142,9 +199,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.Split_1, cmd = m.Split_1.Update(msg)
 	return m, cmd
 }
-func (m model) View() string {
+func (m Model) View() string {
+	v := m.form.View()
+	form := m.lg.NewStyle().Margin(0, 4).Render(v)
+	table := baseStyle.Render(m.Split_1.View())
 
-	return baseStyle.Render(m.Split_1.View()) + "\n"
+	body := lipgloss.JoinHorizontal(lipgloss.Top, table, form)
+	return body
 }
 
 func main() {
@@ -154,7 +215,7 @@ func main() {
 	}
 }
 
-func (m model) buildTable() []table.Row {
+func (m Model) buildTable() []table.Row {
 	newRows := []table.Row{}
 	for _, i := range m.racers {
 		x := []string{i.name, i.B1, i.r1, i.p1, i.r2, i.p2, i.r3, i.p3}
@@ -164,6 +225,37 @@ func (m model) buildTable() []table.Row {
 
 	return newRows
 
+}
+
+var (
+	red    = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
+	indigo = lipgloss.AdaptiveColor{Light: "#5A56E0", Dark: "#7571F9"}
+	green  = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
+)
+
+func NewStyles(lg *lipgloss.Renderer) *Styles {
+	s := Styles{}
+	s.Base = lg.NewStyle().
+		Padding(1, 4, 0, 1)
+	s.HeaderText = lg.NewStyle().
+		Foreground(indigo).
+		Bold(true).
+		Padding(0, 1, 0, 2)
+	s.Status = lg.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(indigo).
+		PaddingLeft(1).
+		MarginTop(1)
+	s.StatusHeader = lg.NewStyle().
+		Foreground(green).
+		Bold(true)
+	s.Highlight = lg.NewStyle().
+		Foreground(lipgloss.Color("212"))
+	s.ErrorHeaderText = s.HeaderText.
+		Foreground(red)
+	s.Help = lg.NewStyle().
+		Foreground(lipgloss.Color("240"))
+	return &s
 }
 
 //Function to update racers from a list
