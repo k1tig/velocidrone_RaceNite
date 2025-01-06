@@ -19,6 +19,8 @@ var (
 
 const maxWidth = 80
 
+
+// use websocket as msg system to invoke func for checking Google sheets master copy
 type racer struct {
 	name            string
 	r1, r2, r3      string
