@@ -17,7 +17,7 @@ type Client struct { //struct to recieve data from velocidrone csv
 
 type Racers struct {
 	RacerName      string `csv:"Display Name"`
-	VdName         string `csv:"vdName"`
+	VdName         string `csv:"VdName"`
 	QualifyingTime string
 	ModelName      string
 }
