@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gocarina/gocsv"
 )
 
 type vdracer struct {
@@ -265,6 +266,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.tablestate = i
 				m.table[i].Focus()
+			case "c":
+				x := m.addRacingList()
+				exportCsv(x)
 			}
 
 		}
@@ -485,4 +489,30 @@ func (m model) addRacingList() [][]string {
 		racingList = append(racingList, racestring)
 	}
 	return racingList
+}
+
+func exportCsv(racelist [][]string) {
+	type racer struct {
+		Name  string `csv:"Pilot"`
+		RTime string `csv:"Qualify Time"`
+	}
+	var raceList []racer
+
+	for _, i := range racelist {
+		var x racer
+		x.Name = i[0]
+		x.RTime = i[1]
+		raceList = append(raceList, x)
+	}
+
+	file, err := os.Create("FMVracelist.csv")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	if err := gocsv.MarshalFile(&raceList, file); err != nil {
+		panic(err)
+	}
+
 }
