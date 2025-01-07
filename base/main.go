@@ -357,7 +357,8 @@ func main() {
 
 	vdRacers := rt.GetVdRacers("race.csv")
 	fmvRaw := rt.GetFMVvoice("FMVvoice.csv")
-	fmvRacers := rt.BindLists(vdRacers, fmvRaw)
+	discordIds := rt.GetDiscordId("discordToVd.csv")
+	fmvRacers := rt.BindLists(vdRacers, fmvRaw, discordIds)
 
 	for _, v := range vdRacers {
 		vdList = append(vdList, vdracer{name: v.VelocidronName, qTime: v.QualifyingTime, craft: v.ModelName})

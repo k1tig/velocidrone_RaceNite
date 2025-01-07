@@ -20,6 +20,12 @@ type Racers struct {
 	VdName         string `csv:"VdName"`
 	QualifyingTime string
 	ModelName      string
+	Id             string `csv:"ID"`
+}
+
+type DiscordRacers struct {
+	DiscordId string `csv:"DiscordId"`
+	VdName    string `csv:"VdName"`
 }
 
 // take a list of racers and returns group sets of racers
@@ -67,6 +73,23 @@ func GetFMVvoice(fileCsv string) []*Racers {
 	return FmvRacers
 }
 
+func GetDiscordId(discordCsv string) []*DiscordRacers {
+	var DiscordRecords = []*DiscordRacers{}
+
+	discordIdFile, err := os.OpenFile(discordCsv, os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+	defer discordIdFile.Close()
+	if err := gocsv.UnmarshalFile(discordIdFile, &DiscordRecords); err != nil { // Load clients from file
+		fmt.Printf("Something broke with FMV CSV: %v", err) //csv needs to be in same folder as main.go for now
+	}
+	if _, err := discordIdFile.Seek(0, 0); err != nil { // Go to the start of the file
+		panic(err)
+	}
+	return DiscordRecords
+}
+
 func RaceArray(vdList [][]string) [][][]string {
 	var maxGroupsize = 8
 	var grouplength int
@@ -110,18 +133,26 @@ func RaceArray(vdList [][]string) [][][]string {
 	return groupStructure
 }
 
-func BindLists(vdl []*Client, fmvl []*Racers) []*Racers {
+func BindLists(vdl []*Client, fmvl []*Racers, dcl []*DiscordRacers) []*Racers {
 	var bound []*Racers
+
+	for _, f := range fmvl {
+		for _, d := range dcl {
+			if d.DiscordId == f.Id {
+				d.VdName = f.VdName
+
+			}
+		}
+	}
 	for _, f := range fmvl {
 		for _, v := range vdl {
-			if v.VelocidronName == f.VdName {
-				f.RacerName = f.VdName
+			if v.VelocidronName == f.VdName || f.RacerName == v.VelocidronName {
 				f.QualifyingTime = v.QualifyingTime
 				f.ModelName = v.ModelName
+				f.RacerName = v.VelocidronName
 				bound = append(bound, f)
 				break
 			}
-
 		}
 		if f.VdName == "" {
 			f.QualifyingTime = "CHECK IN Please!"
