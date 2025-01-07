@@ -356,7 +356,7 @@ func main() {
 	fmvList := []list.Item{}
 
 	vdRacers := rt.GetVdRacers("race.csv")
-	fmvRaw := rt.GetFMVvoice("checkin.csv")
+	fmvRaw := rt.GetFMVvoice("FMVvoice.csv")
 	fmvRacers := rt.BindLists(vdRacers, fmvRaw)
 
 	for _, v := range vdRacers {
