@@ -115,6 +115,7 @@ func BindLists(vdl []*Client, fmvl []*Racers) []*Racers {
 	for _, f := range fmvl {
 		for _, v := range vdl {
 			if v.VelocidronName == f.VdName {
+				f.RacerName = f.VdName
 				f.QualifyingTime = v.QualifyingTime
 				f.ModelName = v.ModelName
 				bound = append(bound, f)

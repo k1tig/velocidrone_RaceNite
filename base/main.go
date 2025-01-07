@@ -225,7 +225,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.table[i].SetRows(rows)
 					}
 				}
-				for i := 1; i < 4; i++ {
+				for i := 1; i < 5; i++ {
 					m.table[i].Blur()
 				}
 				m.state = tableView
@@ -283,7 +283,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
 		case tableView:
-			for i := 0; i < 4; i++ {
+			for i := 0; i < 5; i++ {
 				m.table[i], cmd = m.table[i].Update(msg)
 				cmds = append(cmds, cmd)
 			}
