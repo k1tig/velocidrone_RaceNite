@@ -361,7 +361,7 @@ func main() {
 
 	vdRacers := rt.GetVdRacers("race.csv")
 	fmvRaw := rt.GetFMVvoice("FMVvoice.csv")
-	discordIds := rt.GetDiscordId("discordToVd.csv")
+	discordIds := rt.GetDiscordId("discordtoFMV.csv")
 	fmvRacers := rt.BindLists(vdRacers, fmvRaw, discordIds)
 
 	for _, v := range vdRacers {
@@ -400,7 +400,7 @@ func main() {
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(true),
-		table.WithHeight(8),
+		table.WithHeight(10),
 	)
 
 	s := table.DefaultStyles()
@@ -493,8 +493,8 @@ func (m model) addRacingList() [][]string {
 
 func exportCsv(racelist [][]string) {
 	type racer struct {
-		Name  string `csv:"Pilot"`
-		RTime string `csv:"Qualify Time"`
+		Name  string `csv:"Pilot Name"`
+		RTime string `csv:"Qual"`
 	}
 	var raceList []racer
 

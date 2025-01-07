@@ -82,7 +82,7 @@ func GetDiscordId(discordCsv string) []*DiscordRacers {
 	}
 	defer discordIdFile.Close()
 	if err := gocsv.UnmarshalFile(discordIdFile, &DiscordRecords); err != nil { // Load clients from file
-		fmt.Printf("Something broke with FMV CSV: %v", err) //csv needs to be in same folder as main.go for now
+		fmt.Printf("Something broke with discord ID CSV: %v", err) //csv needs to be in same folder as main.go for now
 	}
 	if _, err := discordIdFile.Seek(0, 0); err != nil { // Go to the start of the file
 		panic(err)
