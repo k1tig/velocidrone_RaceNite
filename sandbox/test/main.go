@@ -11,6 +11,7 @@ type Pilot struct {
 	h6, h7, h8, h9, h10          string
 	p1, p2, p3, p4, p5           string
 	p6, p7, p8, p9, p10          string
+	s2, s3                       string
 }
 
 var fmvVoiceChat = []string{"Knee", "IQ0", "asiy", "eedok", "kalli", "dapaca", "uGeLLin", "AP3X", "SITHironoid"}
@@ -28,7 +29,7 @@ func makePilots() {
 
 func main() {
 	// Create a new CSV file
-	file, err := os.Create("data.csv")
+	file, err := os.Create("../try.csv")
 	if err != nil {
 		panic(err)
 	}

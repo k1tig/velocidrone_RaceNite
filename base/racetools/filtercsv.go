@@ -17,7 +17,7 @@ type Client struct { //struct to recieve data from velocidrone csv
 
 type Racers struct {
 	RacerName      string `csv:"Display Name"`
-	VelocidronName string
+	VdName         string `csv:"vdName"`
 	QualifyingTime string
 	ModelName      string
 }
@@ -114,8 +114,7 @@ func BindLists(vdl []*Client, fmvl []*Racers) []*Racers {
 	var bound []*Racers
 	for _, f := range fmvl {
 		for _, v := range vdl {
-			if v.VelocidronName == f.RacerName {
-				f.VelocidronName = v.VelocidronName
+			if v.VelocidronName == f.VdName {
 				f.QualifyingTime = v.QualifyingTime
 				f.ModelName = v.ModelName
 				bound = append(bound, f)
@@ -123,7 +122,7 @@ func BindLists(vdl []*Client, fmvl []*Racers) []*Racers {
 			}
 
 		}
-		if f.VelocidronName == "" {
+		if f.VdName == "" {
 			f.QualifyingTime = "CHECK IN Please!"
 			bound = append(bound, f)
 		}
