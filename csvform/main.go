@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"strconv"
+
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
@@ -82,26 +84,13 @@ func (m Model) Init() tea.Cmd { return m.csvForm.Init() }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = min(msg.Width, maxWidth) - m.styles.Base.GetHorizontalFrameSize()
+
 	case tea.KeyMsg:
-		switch m.csvForm.State {
-		case huh.StateCompleted:
 
-			m.discordList = rt.GetDiscordId(m.csvForm.GetString("discord"))
-			m.fmvVoiceList = rt.GetFMVvoice(m.csvForm.GetString("fmv"))
-			m.vdList = rt.GetVdRacers(m.csvForm.GetString("vd"))
-			m.state = viewState
-		}
-		switch m.state {
-		case viewState:
-			rows := m.makeFMVTable()
-			m.fmvTable.SetRows(rows)
-			m.fmvTable, cmd = m.fmvTable.Update(msg)
-			return m, cmd
-
-		}
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
@@ -110,10 +99,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "`":
 			m.csvForm.State = huh.StateNormal
 			m.csvForm = NewModel().csvForm
+			return m, cmd
 		}
-	}
 
-	var cmds []tea.Cmd
+	}
 
 	// Process the form
 	form, cmd := m.csvForm.Update(msg)
@@ -123,20 +112,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.csvForm.State == huh.StateCompleted {
-		// Quit when the form is done.
+		m.fmvTable, cmd = m.fmvTable.Update(msg)
+		m.discordList = rt.GetDiscordId(m.csvForm.GetString("discord"))
+		m.fmvVoiceList = rt.GetFMVvoice(m.csvForm.GetString("fmv"))
+		m.vdList = rt.GetVdRacers(m.csvForm.GetString("vd"))
+		m.fmvVoiceList = rt.BindLists(m.vdList, m.fmvVoiceList, m.discordList)
+		rows := m.makeFMVTable()
+		m.fmvTable.SetRows(rows)
+		m.state = viewState
 		cmds = append(cmds, cmd)
-	}
 
+	}
 	return m, tea.Batch(cmds...)
 }
 
 func (m Model) View() string {
-	switch m.state {
-	case viewState:
-		body := m.fmvTable.View()
+	switch m.csvForm.State {
+	case huh.StateCompleted:
+
+		num := strconv.Itoa(len(m.fmvVoiceList))
+		header := lipgloss.NewStyle().Foreground(lipgloss.Color("44"))
+
+		title := header.Render(fmt.Sprintf("\n\n FMV Voice Checkin (count:%s)\n", num))
+		tableView := m.fmvTable.View()
+		body := lipgloss.JoinVertical(lipgloss.Center, title, tableView)
 		return body
 
 	default:
+
 		body := m.csvForm.View()
 		return body
 	}
@@ -193,6 +196,7 @@ func NewModel() Model {
 
 	fmvColumns := []table.Column{
 		{Title: "Name", Width: 16},
+		{Title: "Qualify time", Width: 14},
 		{Title: "Status", Width: 10},
 	}
 
@@ -216,14 +220,26 @@ func NewModel() Model {
 		table.WithColumns(fmvColumns),
 		table.WithRows(rows),
 		table.WithFocused(true),
-		table.WithHeight(6),
+		table.WithHeight(12),
 	)
+	s := table.DefaultStyles()
+	s.Header = s.Header.
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("3")).
+		BorderBottom(true).
+		Bold(false)
+	s.Selected = s.Selected.
+		Foreground(lipgloss.Color("229")).
+		Background(lipgloss.Color("57")).
+		Bold(false)
 
 	var groupTlist []table.Model
 
 	for i := 0; i < 5; i++ {
 		groupTlist = append(groupTlist, groupTable)
 	}
+	fmvTable.SetStyles(s)
+
 	m.groups = groupTlist
 	m.vdTable = vdTable
 	m.fmvTable = fmvTable
@@ -239,10 +255,11 @@ func (m Model) makeFMVTable() []table.Row {
 		var fmvNul rt.FmvVoicePilot
 		var status string
 		name := i.RacerName
+		qtime := i.QualifyingTime
 		if i.Status == fmvNul.Status {
 			status = "Missing"
 		}
-		s = append(s, name, status)
+		s = append(s, name, qtime, status)
 		rows = append(rows, s)
 	}
 	return rows
