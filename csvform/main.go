@@ -25,8 +25,8 @@ var (
 type state uint
 
 const (
-	formState state = iota
-	viewState
+	fmvState state = iota
+	vdState
 )
 
 type Model struct {
@@ -90,7 +90,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = min(msg.Width, maxWidth) - m.styles.Base.GetHorizontalFrameSize()
 
 	case tea.KeyMsg:
-
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
@@ -100,6 +99,33 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.csvForm.State = huh.StateNormal
 			m.csvForm = NewModel().csvForm
 			return m, cmd
+		case "tab":
+			if m.csvForm.State == huh.StateCompleted {
+				if m.state == fmvState {
+					m.state = vdState
+				} else {
+					m.state = fmvState
+				}
+			}
+			return m, cmd
+
+		}
+
+		switch m.state {
+		case fmvState:
+			m.vdTable.Blur()
+			m.fmvTable.Focus()
+			m.fmvTable, cmd = m.fmvTable.Update(msg)
+			cmds = append(cmds, cmd)
+
+			//return m, tea.Batch(cmds...)
+		case vdState:
+			m.vdTable.Focus()
+			m.vdTable, cmd = m.vdTable.Update(msg)
+			m.fmvTable.Blur()
+			cmds = append(cmds, cmd)
+
+			//return m, tea.Batch(cmds...)
 		}
 
 	}
@@ -112,14 +138,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.csvForm.State == huh.StateCompleted {
-		m.fmvTable, cmd = m.fmvTable.Update(msg)
+		//m.fmvTable, cmd = m.fmvTable.Update(msg)
+		cmds = append(cmds, cmd)
+
 		m.discordList = rt.GetDiscordId(m.csvForm.GetString("discord"))
 		m.fmvVoiceList = rt.GetFMVvoice(m.csvForm.GetString("fmv"))
 		m.vdList = rt.GetVdRacers(m.csvForm.GetString("vd"))
 		m.fmvVoiceList = rt.BindLists(m.vdList, m.fmvVoiceList, m.discordList)
-		rows := m.makeFMVTable()
-		m.fmvTable.SetRows(rows)
-		m.state = viewState
+
+		fmvrows := m.makeFMVTable()
+		m.fmvTable.SetRows(fmvrows)
+
+		vdrows := m.makeVDTable()
+		m.vdTable.SetRows(vdrows)
+
 		cmds = append(cmds, cmd)
 
 	}
@@ -129,13 +161,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	switch m.csvForm.State {
 	case huh.StateCompleted:
-
-		num := strconv.Itoa(len(m.fmvVoiceList))
 		header := lipgloss.NewStyle().Foreground(lipgloss.Color("44"))
 
-		title := header.Render(fmt.Sprintf("\n\n FMV Voice Checkin (count:%s)\n", num))
-		tableView := m.fmvTable.View()
-		body := lipgloss.JoinVertical(lipgloss.Center, title, tableView)
+		vdTitle := header.Render("\n\nVelocidrone Time\n")
+		vdTable := m.vdTable.View()
+		vdBody := lipgloss.JoinVertical(lipgloss.Center, vdTitle, vdTable)
+
+		num := strconv.Itoa(len(m.fmvVoiceList))
+		fmvtitle := header.Render(fmt.Sprintf("\n\n FMV Voice Checkin (count:%s)\n", num))
+		fmvTable := m.fmvTable.View()
+		fmvBody := lipgloss.JoinVertical(lipgloss.Center, fmvtitle, fmvTable)
+
+		body := lipgloss.JoinHorizontal(lipgloss.Top, vdBody, fmvBody)
 		return body
 
 	default:
@@ -212,8 +249,8 @@ func NewModel() Model {
 	vdTable := table.New(
 		table.WithColumns(vdColumns),
 		table.WithRows(rows),
-		table.WithFocused(true),
-		table.WithHeight(6),
+		table.WithFocused(false),
+		table.WithHeight(12),
 	)
 
 	fmvTable := table.New(
@@ -239,6 +276,7 @@ func NewModel() Model {
 		groupTlist = append(groupTlist, groupTable)
 	}
 	fmvTable.SetStyles(s)
+	vdTable.SetStyles(s)
 
 	m.groups = groupTlist
 	m.vdTable = vdTable
@@ -263,5 +301,17 @@ func (m Model) makeFMVTable() []table.Row {
 		rows = append(rows, s)
 	}
 	return rows
-
+}
+func (m Model) makeVDTable() []table.Row {
+	rows := []table.Row{}
+	for _, i := range m.vdList {
+		var obj []string
+		var name, time, quad string
+		name = i.VelocidronName
+		time = i.QualifyingTime
+		quad = i.ModelName
+		obj = append(obj, name, time, quad)
+		rows = append(rows, obj)
+	}
+	return rows
 }
