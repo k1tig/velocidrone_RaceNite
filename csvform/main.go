@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+
+	rt "abc.com/csvform/racetools"
 )
 
 const maxWidth = 80
@@ -17,6 +20,29 @@ var (
 	green  = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
 )
 
+type state uint
+
+const (
+	formState state = iota
+	viewState
+)
+
+type Model struct {
+	state   state
+	csvForm *huh.Form
+	width   int
+	lg      *lipgloss.Renderer
+	styles  *Styles
+
+	discordList  []*rt.DiscordIds
+	fmvVoiceList []*rt.FmvVoicePilot
+	vdList       []*rt.VdPilot
+
+	groups   []table.Model
+	vdTable  table.Model
+	fmvTable table.Model
+}
+
 type Styles struct {
 	Base,
 	HeaderText,
@@ -25,49 +51,6 @@ type Styles struct {
 	Highlight,
 	ErrorHeaderText,
 	Help lipgloss.Style
-}
-
-type Model struct {
-	csvForm *huh.Form
-	width   int
-	lg      *lipgloss.Renderer
-	styles  *Styles
-}
-
-func NewModel() Model {
-	m := Model{}
-	m.lg = lipgloss.DefaultRenderer()
-	m.styles = NewStyles(m.lg)
-	var (
-		VdFile       string // csv of the weekly track and qualifying times.
-		FmvVoiceFile string // voice chat csv with usernames and discord IDs.
-		DiscordFile  string // file that has racer's IDs paired to velocidrone names.
-	)
-
-	m.csvForm = huh.NewForm(
-		huh.NewGroup(
-			huh.NewFilePicker().
-				Title("Velocidrone File").
-				Description("CSV file for Veloidrone track").
-				AllowedTypes([]string{".csv"}).
-				Value(&VdFile),
-
-			huh.NewFilePicker().
-				Title("FMV Voice File").
-				Description("CSV of FMV voice with User and ID flags").
-				AllowedTypes([]string{".csv"}).
-				Value(&FmvVoiceFile),
-
-			huh.NewFilePicker().
-				Title("Discord File").
-				Description("CSV record of discord ID's and respective VD names").
-				AllowedTypes([]string{".csv"}).
-				Value(&DiscordFile),
-		),
-	).WithWidth(65).
-		WithShowHelp(true).
-		WithShowErrors(false)
-	return m
 }
 
 func NewStyles(lg *lipgloss.Renderer) *Styles {
@@ -98,10 +81,27 @@ func NewStyles(lg *lipgloss.Renderer) *Styles {
 func (m Model) Init() tea.Cmd { return m.csvForm.Init() }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = min(msg.Width, maxWidth) - m.styles.Base.GetHorizontalFrameSize()
 	case tea.KeyMsg:
+		switch m.csvForm.State {
+		case huh.StateCompleted:
+
+			m.discordList = rt.GetDiscordId(m.csvForm.GetString("discord"))
+			m.fmvVoiceList = rt.GetFMVvoice(m.csvForm.GetString("fmv"))
+			m.vdList = rt.GetVdRacers(m.csvForm.GetString("vd"))
+			m.state = viewState
+		}
+		switch m.state {
+		case viewState:
+			rows := m.makeFMVTable()
+			m.fmvTable.SetRows(rows)
+			m.fmvTable, cmd = m.fmvTable.Update(msg)
+			return m, cmd
+
+		}
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
@@ -131,10 +131,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	switch m.csvForm.State {
-	case huh.StateCompleted:
-		body := "OOOO babyyyyy"
+	switch m.state {
+	case viewState:
+		body := m.fmvTable.View()
 		return body
+
 	default:
 		body := m.csvForm.View()
 		return body
@@ -148,4 +149,102 @@ func main() {
 		fmt.Println("Bummer, there's been an error:", err)
 		os.Exit(1)
 	}
+}
+
+func NewModel() Model {
+
+	m := Model{}
+	m.lg = lipgloss.DefaultRenderer()
+	m.styles = NewStyles(m.lg)
+
+	m.csvForm = huh.NewForm(
+		huh.NewGroup(
+			huh.NewFilePicker().
+				Title("Velocidrone File").
+				Description("CSV file for Veloidrone track").
+				AllowedTypes([]string{".csv"}).
+				Key("vd"),
+
+			huh.NewFilePicker().
+				Title("FMV Voice File").
+				Description("CSV of FMV voice with User and ID flags").
+				AllowedTypes([]string{".csv"}).
+				Key("fmv"),
+
+			huh.NewFilePicker().
+				Title("Discord File").
+				Description("CSV record of discord ID's and respective VD names").
+				AllowedTypes([]string{".csv"}).
+				Key("discord"),
+		),
+	).WithWidth(65).
+		WithShowHelp(true).
+		WithShowErrors(false)
+
+	gColumns := []table.Column{
+		{Title: "Name", Width: 16},
+		{Title: "Time", Width: 8},
+	}
+	vdColumns := []table.Column{
+		{Title: "Name", Width: 16},
+		{Title: "Time", Width: 8},
+		{Title: "Craft", Width: 10},
+	}
+
+	fmvColumns := []table.Column{
+		{Title: "Name", Width: 16},
+		{Title: "Status", Width: 10},
+	}
+
+	rows := []table.Row{}
+
+	groupTable := table.New( //for color groups display
+		table.WithColumns(gColumns),
+		table.WithRows(rows),
+		table.WithFocused(true),
+		table.WithHeight(6),
+	)
+
+	vdTable := table.New(
+		table.WithColumns(vdColumns),
+		table.WithRows(rows),
+		table.WithFocused(true),
+		table.WithHeight(6),
+	)
+
+	fmvTable := table.New(
+		table.WithColumns(fmvColumns),
+		table.WithRows(rows),
+		table.WithFocused(true),
+		table.WithHeight(6),
+	)
+
+	var groupTlist []table.Model
+
+	for i := 0; i < 5; i++ {
+		groupTlist = append(groupTlist, groupTable)
+	}
+	m.groups = groupTlist
+	m.vdTable = vdTable
+	m.fmvTable = fmvTable
+
+	return m
+}
+
+func (m Model) makeFMVTable() []table.Row {
+	rows := []table.Row{}
+
+	for _, i := range m.fmvVoiceList {
+		var s []string
+		var fmvNul rt.FmvVoicePilot
+		var status string
+		name := i.RacerName
+		if i.Status == fmvNul.Status {
+			status = "Missing"
+		}
+		s = append(s, name, status)
+		rows = append(rows, s)
+	}
+	return rows
+
 }
