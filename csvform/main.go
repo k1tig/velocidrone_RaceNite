@@ -27,6 +27,7 @@ type state uint
 const (
 	fmvState state = iota
 	vdState
+	formState
 )
 
 type Model struct {
@@ -118,7 +119,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.fmvTable, cmd = m.fmvTable.Update(msg)
 			cmds = append(cmds, cmd)
 
-			//return m, tea.Batch(cmds...)
 		case vdState:
 			m.vdTable.Focus()
 			m.vdTable, cmd = m.vdTable.Update(msg)
@@ -136,25 +136,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.csvForm = f
 		cmds = append(cmds, cmd)
 	}
+	if m.state == formState {
+		if m.csvForm.State == huh.StateCompleted {
 
-	if m.csvForm.State == huh.StateCompleted {
-		//m.fmvTable, cmd = m.fmvTable.Update(msg)
-		cmds = append(cmds, cmd)
+			m.discordList = rt.GetDiscordId(m.csvForm.GetString("discord"))
+			m.fmvVoiceList = rt.GetFMVvoice(m.csvForm.GetString("fmv"))
+			m.vdList = rt.GetVdRacers(m.csvForm.GetString("vd"))
+			m.fmvVoiceList = rt.BindLists(m.vdList, m.fmvVoiceList, m.discordList)
 
-		m.discordList = rt.GetDiscordId(m.csvForm.GetString("discord"))
-		m.fmvVoiceList = rt.GetFMVvoice(m.csvForm.GetString("fmv"))
-		m.vdList = rt.GetVdRacers(m.csvForm.GetString("vd"))
-		m.fmvVoiceList = rt.BindLists(m.vdList, m.fmvVoiceList, m.discordList)
+			fmvrows := m.makeFMVTable()
+			m.fmvTable.SetRows(fmvrows) //builds the fmv table from csv
+			vdrows := m.makeVDTable()
+			m.vdTable.SetRows(vdrows) // builds the vd table from vd
 
-		fmvrows := m.makeFMVTable()
-		m.fmvTable.SetRows(fmvrows)
+			m.fmvTable, cmd = m.fmvTable.Update(msg)
+			m.state = fmvState
+			cmds = append(cmds, cmd)
 
-		vdrows := m.makeVDTable()
-		m.vdTable.SetRows(vdrows)
-
-		cmds = append(cmds, cmd)
-
+		}
 	}
+
 	return m, tea.Batch(cmds...)
 }
 
@@ -173,7 +174,9 @@ func (m Model) View() string {
 		fmvBody := lipgloss.JoinVertical(lipgloss.Center, fmvtitle, fmvTable)
 
 		body := lipgloss.JoinHorizontal(lipgloss.Top, vdBody, fmvBody)
-		return body
+		footer := "\n\nUse 'tab' to change lists"
+		view := lipgloss.JoinVertical(lipgloss.Left, body, footer)
+		return view
 
 	default:
 
@@ -242,7 +245,7 @@ func NewModel() Model {
 	groupTable := table.New( //for color groups display
 		table.WithColumns(gColumns),
 		table.WithRows(rows),
-		table.WithFocused(true),
+		table.WithFocused(false),
 		table.WithHeight(6),
 	)
 
@@ -281,6 +284,7 @@ func NewModel() Model {
 	m.groups = groupTlist
 	m.vdTable = vdTable
 	m.fmvTable = fmvTable
+	m.state = formState
 
 	return m
 }
