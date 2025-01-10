@@ -22,6 +22,22 @@ var (
 	green  = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
 )
 
+var fmvTag string = `
+
+
+_____ __  ____     __                     
+|  ___|  \/  \ \   / /                     
+| |_  | |\/| |\ \ / /                      
+|  _| | |  | | \ V /                       
+|_|__ |_|  |_|  \_/  _   _ _ _       _ _ _ 
+|   _ \ __ _ ___ ___| \ | (_) |_ ___| | | |
+| |_)  / _ |/ __/ _ \  \| | | __/ _ \ | | |
+|  _ < (_| | (_|  __/ |\  | | ||  __/_|_|_|
+|_| \_\__,_|\___\___|_| \_|_|\__\___(_|_|_)
+
+   
+   `
+
 type state uint
 
 const (
@@ -163,17 +179,22 @@ func (m Model) View() string {
 	switch m.csvForm.State {
 	case huh.StateCompleted:
 		header := lipgloss.NewStyle().Foreground(lipgloss.Color("44"))
+		padding := lipgloss.NewStyle().Padding(0, 2)
+		accii := lipgloss.NewStyle().Padding(0, 2).Foreground(lipgloss.Color("184"))
 
 		vdTitle := header.Render("\n\nVelocidrone Time\n")
 		vdTable := m.vdTable.View()
-		vdBody := lipgloss.JoinVertical(lipgloss.Center, vdTitle, vdTable)
+		vdBody := padding.Render(lipgloss.JoinVertical(lipgloss.Center, vdTitle, vdTable))
 
 		num := strconv.Itoa(len(m.fmvVoiceList))
 		fmvtitle := header.Render(fmt.Sprintf("\n\n FMV Voice Checkin (count:%s)\n", num))
 		fmvTable := m.fmvTable.View()
-		fmvBody := lipgloss.JoinVertical(lipgloss.Center, fmvtitle, fmvTable)
+		fmvBody := padding.Render(lipgloss.JoinVertical(lipgloss.Center, fmvtitle, fmvTable))
 
-		body := lipgloss.JoinHorizontal(lipgloss.Top, vdBody, fmvBody)
+		tables := lipgloss.JoinHorizontal(lipgloss.Top, vdBody, fmvBody)
+		fmvText := accii.Render(fmvTag)
+
+		body := lipgloss.JoinHorizontal(lipgloss.Center, tables, fmvText)
 		footer := "\n\nUse 'tab' to change lists"
 		view := lipgloss.JoinVertical(lipgloss.Left, body, footer)
 		return view
