@@ -234,9 +234,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	switch m.csvForm.State {
 	case huh.StateCompleted:
-		header := lipgloss.NewStyle().Foreground(lipgloss.Color("44"))
+		header := lipgloss.NewStyle().Foreground(lipgloss.Color("233"))
 		padding := lipgloss.NewStyle().Padding(0, 2)
-		accii := lipgloss.NewStyle().Padding(0, 4).Foreground(lipgloss.Color("184"))
+		accii := lipgloss.NewStyle().Padding(0, 4).Foreground(lipgloss.Color("119"))
 		tablePadding := lipgloss.NewStyle().Padding(1, 4)
 
 		vdTitle := header.Render("\n\nVelocidrone Times\n")
@@ -371,15 +371,17 @@ func NewModel() Model {
 		table.WithHeight(12),
 	)
 	s := table.DefaultStyles()
+
 	s.Header = s.Header.
 		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("3")).
+		BorderForeground(lipgloss.Color("ffb3fd")).
+		Foreground(lipgloss.Color("233")).
 		BorderBottom(true).
 		Bold(false)
+
 	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
+		Foreground(lipgloss.Color("117")).
+		Bold(true)
 
 	var groupTlist []table.Model
 
