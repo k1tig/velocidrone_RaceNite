@@ -159,13 +159,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 
 		case vdState:
-			m.vdSearch, cmd = m.vdSearch.Update(msg)
+
 			m.fmvTable.Blur()
-			cmds = append(cmds, cmd)
-
-			//return m, tea.Batch(cmds...)
 		}
-
 	}
 
 	// Process the form
@@ -194,6 +190,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 
 		}
+	}
+	if m.state == vdState {
+		m.vdSearch, cmd = m.vdSearch.Update(msg)
+		cmds = append(cmds, cmd)
 	}
 
 	return m, tea.Batch(cmds...)
@@ -351,7 +351,7 @@ func NewModel() Model {
 		BorderBottom(true).
 		Bold(false)
 	s.Selected = s.Selected.
-		Foreground(lipgloss.Color(blue))
+		Background(lipgloss.Color("128"))
 	fmvTable.SetStyles(s)
 	vdTable.SetStyles(s)
 
@@ -359,7 +359,7 @@ func NewModel() Model {
 	group := table.DefaultStyles()
 	group.Cell = group.Cell.
 		UnsetForeground().
-		Foreground(lipgloss.Color("199"))
+		Foreground(lipgloss.Color("172"))
 	group.Selected = group.Selected.
 		UnsetForeground().
 		Foreground(lipgloss.Color("118"))
@@ -370,7 +370,12 @@ func NewModel() Model {
 
 	var items = []list.Item{}
 	m.vdSearch = list.New(items, list.NewDefaultDelegate(), 0, 0)
-	m.vdSearch.Title = "My Fave Things"
+	m.vdSearch.Title = "Velocidrone Times"
+	m.vdSearch.Styles.Title = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("178")).
+		Background(lipgloss.Color("0")).
+		Bold(true).
+		Underline(true)
 
 	m.groups = groupTlist
 	m.vdTable = vdTable
@@ -481,7 +486,7 @@ func (m Model) makeList() list.Model {
 	for _, i := range m.vdList {
 		obj := item{name: i.VelocidronName, time: i.QualifyingTime, craft: i.ModelName}
 		//items = append(items, obj)
-		m.vdSearch.InsertItem(-1, obj)
+		m.vdSearch.InsertItem(99999, obj)
 	}
 
 	return m.vdSearch
