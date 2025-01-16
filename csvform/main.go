@@ -7,6 +7,7 @@ import (
 
 	"strconv"
 
+	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
@@ -18,36 +19,16 @@ import (
 const maxWidth = 80
 
 var (
-	red    = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
-	indigo = lipgloss.AdaptiveColor{Light: "#5A56E0", Dark: "#7571F9"}
-	green  = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
+	//red    = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
+	//indigo = lipgloss.AdaptiveColor{Light: "#5A56E0", Dark: "#7571F9"}
+	//green  = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
+	blue = lipgloss.Color("44")
 )
 
 var (
 	baseStyle = lipgloss.NewStyle().
-			BorderStyle(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color("240"))
-
-	magentaStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("201")).
-			Bold(true).
-			Underline(true)
-	goldStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("220")).
-			Bold(true).
-			Underline(true)
-	cyanStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("123")).
-			Bold(true).
-			Underline(true)
-	orangStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("208")).
-			Bold(true).
-			Underline(true)
-	greenStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("34")).
-			Bold(true).
-			Underline(true)
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("236"))
 )
 
 var fmvTag string = `
@@ -89,6 +70,8 @@ type Model struct {
 	groups   []table.Model
 	vdTable  table.Model
 	fmvTable table.Model
+
+	vdSearch list.Model
 }
 
 type Styles struct {
@@ -105,24 +88,7 @@ func NewStyles(lg *lipgloss.Renderer) *Styles {
 	s := Styles{}
 	s.Base = lg.NewStyle().
 		Padding(1, 4, 0, 1)
-	s.HeaderText = lg.NewStyle().
-		Foreground(indigo).
-		Bold(true).
-		Padding(0, 1, 0, 2)
-	s.Status = lg.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(indigo).
-		PaddingLeft(1).
-		MarginTop(1)
-	s.StatusHeader = lg.NewStyle().
-		Foreground(green).
-		Bold(true)
-	s.Highlight = lg.NewStyle().
-		Foreground(lipgloss.Color("212"))
-	s.ErrorHeaderText = s.HeaderText.
-		Foreground(red)
-	s.Help = lg.NewStyle().
-		Foreground(lipgloss.Color("240"))
+
 	return &s
 }
 
@@ -134,6 +100,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = min(msg.Width, maxWidth) - m.styles.Base.GetHorizontalFrameSize()
+		m.vdSearch.SetSize(20, 20)
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -180,20 +147,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			for i := 1; i < 5; i++ {
 				m.groups[i].Blur()
+
 			}
 
 		}
 
 		switch m.state {
 		case fmvState:
-			m.vdTable.Blur()
 			m.fmvTable.Focus()
 			m.fmvTable, cmd = m.fmvTable.Update(msg)
 			cmds = append(cmds, cmd)
 
 		case vdState:
-			m.vdTable.Focus()
-			m.vdTable, cmd = m.vdTable.Update(msg)
+			m.vdSearch, cmd = m.vdSearch.Update(msg)
 			m.fmvTable.Blur()
 			cmds = append(cmds, cmd)
 
@@ -221,8 +187,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			vdrows := m.makeVDTable()
 			m.vdTable.SetRows(vdrows) // builds the vd table from vd
 
+			m.vdSearch = m.makeList()
+
 			m.fmvTable, cmd = m.fmvTable.Update(msg)
-			m.state = fmvState
+			m.state = vdState
 			cmds = append(cmds, cmd)
 
 		}
@@ -234,45 +202,50 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	switch m.csvForm.State {
 	case huh.StateCompleted:
-		header := lipgloss.NewStyle().Foreground(lipgloss.Color("233"))
+
+		header := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
 		padding := lipgloss.NewStyle().Padding(0, 2)
-		accii := lipgloss.NewStyle().Padding(0, 4).Foreground(lipgloss.Color("119"))
+		accii := lipgloss.NewStyle().Padding(0, 4).Foreground(lipgloss.Color("11"))
 		tablePadding := lipgloss.NewStyle().Padding(1, 4)
 
-		vdTitle := header.Render("\n\nVelocidrone Times\n")
-		vdTable := m.vdTable.View()
-		vdBody := padding.Render(lipgloss.JoinVertical(lipgloss.Center, vdTitle, vdTable))
+		/*
+			vdTitle := header.Render("\n\nVelocidrone Times\n")
+			vdTable := m.vdTable.View()
+			vdBody := padding.Render(lipgloss.JoinVertical(lipgloss.Center, vdTitle, vdTable))
+		*/
+
+		vdSearchBody := docStyle.Render(m.vdSearch.View())
 
 		num := strconv.Itoa(len(m.fmvVoiceList))
 		fmvtitle := header.Render(fmt.Sprintf("\n\n FMV Voice Checkin (count:%s)\n", num))
 		fmvTable := m.fmvTable.View()
 		fmvBody := padding.Render(lipgloss.JoinVertical(lipgloss.Center, fmvtitle, fmvTable))
 
-		tables := lipgloss.JoinHorizontal(lipgloss.Top, vdBody, fmvBody)
+		tables := lipgloss.JoinHorizontal(lipgloss.Center, vdSearchBody, fmvBody)
 		fmvText := accii.Render(fmvTag)
 
 		body := lipgloss.JoinHorizontal(lipgloss.Center, tables, fmvText)
-		footer := "\n\nUse 'tab' to change lists\n\n"
+		footer := "\nUse 'tab' to change lists\n"
 		view := lipgloss.JoinVertical(lipgloss.Left, body, footer)
 
 		//bracket groups section
-		goldHeader := goldStyle.Render("Gold Group:")
+		goldHeader := "Gold Group:"
 		goldBody := baseStyle.Render(m.groups[0].View())
 		gold := lipgloss.JoinVertical(lipgloss.Center, goldHeader, goldBody)
 
-		mHeader := magentaStyle.Render("Magenta Group:")
+		mHeader := "Magenta Group:"
 		mBody := baseStyle.Render(m.groups[1].View())
 		magenta := lipgloss.JoinVertical(lipgloss.Center, mHeader, mBody)
 
-		cyanHeader := cyanStyle.Render("Cyan Group:")
+		cyanHeader := "Cyan Group:"
 		cyanBody := baseStyle.Render(m.groups[2].View())
 		cyan := lipgloss.JoinVertical(lipgloss.Center, cyanHeader, cyanBody)
 
-		orangeHeader := orangStyle.Render("Orange Group:")
+		orangeHeader := "Orange Group:"
 		orangeBody := baseStyle.Render(m.groups[3].View())
 		orange := lipgloss.JoinVertical(lipgloss.Center, orangeHeader, orangeBody)
 
-		greenHeader := greenStyle.Render("Green Group:")
+		greenHeader := "Green Group:"
 		greenBody := baseStyle.Render(m.groups[4].View())
 		green := lipgloss.JoinVertical(lipgloss.Center, greenHeader, greenBody)
 
@@ -282,8 +255,8 @@ func (m Model) View() string {
 
 		//groupBody := lipgloss.JoinVertical(lipgloss.Center, r1, r2)
 
-		layout := lipgloss.JoinVertical(lipgloss.Center, view, r1)
-		return layout
+		groupBody := lipgloss.JoinVertical(lipgloss.Center, view, r1)
+		return groupBody
 
 	default:
 
@@ -371,25 +344,33 @@ func NewModel() Model {
 		table.WithHeight(12),
 	)
 	s := table.DefaultStyles()
-
 	s.Header = s.Header.
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("ffb3fd")).
-		Foreground(lipgloss.Color("233")).
+		Foreground(lipgloss.Color("239")).
 		BorderBottom(true).
 		Bold(false)
-
 	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("117")).
-		Bold(true)
+		Foreground(lipgloss.Color(blue))
+	fmvTable.SetStyles(s)
+	vdTable.SetStyles(s)
 
 	var groupTlist []table.Model
+	group := table.DefaultStyles()
+	group.Cell = group.Cell.
+		UnsetForeground().
+		Foreground(lipgloss.Color("199"))
+	group.Selected = group.Selected.
+		UnsetForeground().
+		Foreground(lipgloss.Color("118"))
+	gt.SetStyles(group)
 
 	g1, g2, g3, g4, g5 := gt, gt, gt, gt, gt
 	groupTlist = append(groupTlist, g1, g2, g3, g4, g5) // fix this ugly thing, just broken down to test
 
-	fmvTable.SetStyles(s)
-	vdTable.SetStyles(s)
+	var items = []list.Item{}
+	m.vdSearch = list.New(items, list.NewDefaultDelegate(), 0, 0)
+	m.vdSearch.Title = "My Fave Things"
 
 	m.groups = groupTlist
 	m.vdTable = vdTable
@@ -483,18 +464,25 @@ func (m Model) addRacingList() [][]string {
 	return racingList
 }
 
-/*
-func (m Model) makeBrackets(brackets [][][]string) {
-	indexLen := len(brackets)
-	for i := 0; i < indexLen; i++ {
-		rows := []table.Row{}
-		for _, x := range brackets[i] {
-			rows = append(rows, x)
-			m.groups[i].SetRows(rows)
-		}
-	}
-	for i := 1; i < 5; i++ {
-		m.groups[i].Blur()
-	}
+type item struct {
+	name, time, craft string
 }
-*/
+
+func (i item) Title() string { return i.name }
+func (i item) Description() string {
+	description := fmt.Sprintf("%s | %s", i.time, i.craft)
+	return description
+}
+func (i item) FilterValue() string { return i.name }
+
+var docStyle = lipgloss.NewStyle().Padding(7, 14, 0, 0) // for list
+
+func (m Model) makeList() list.Model {
+	for _, i := range m.vdList {
+		obj := item{name: i.VelocidronName, time: i.QualifyingTime, craft: i.ModelName}
+		//items = append(items, obj)
+		m.vdSearch.InsertItem(-1, obj)
+	}
+
+	return m.vdSearch
+}
