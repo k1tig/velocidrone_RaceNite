@@ -19,10 +19,9 @@ import (
 const maxWidth = 80
 
 var (
-	//red    = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
-	//indigo = lipgloss.AdaptiveColor{Light: "#5A56E0", Dark: "#7571F9"}
-	//green  = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
-	blue = lipgloss.Color("44")
+// red    = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
+// indigo = lipgloss.AdaptiveColor{Light: "#5A56E0", Dark: "#7571F9"}
+// green  = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
 )
 
 var (
@@ -120,20 +119,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.state = fmvState
 				}
 			}
-
 			return m, cmd
 
-		case "A":
+		case "A", "a":
 			if m.state == fmvState {
 				x := m.fmvTable.SelectedRow()
 				m.Checkin(x)
 				fmvRows := m.makeFMVTable()
 				m.fmvTable.SetRows(fmvRows)
 			}
-
 			return m, cmd
 
-		case "G":
+		case "G", "g":
+			var clearRows = []table.Row{}
+			for i := 0; i < 5; i++ {
+				m.groups[i].SetRows(clearRows)
+			}
 			list := m.addRacingList()      // order lists of entered
 			brackets := rt.RaceArray(list) //
 			//m.makeBrackets(brackets)       //allocates racers to groups
@@ -149,7 +150,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.groups[i].Blur()
 
 			}
-
+		case "R", "r":
+			if m.state == fmvState {
+				m.fmvTable.SelectedRow()
+			}
 		}
 
 		switch m.state {
@@ -157,9 +161,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.fmvTable.Focus()
 			m.fmvTable, cmd = m.fmvTable.Update(msg)
 			cmds = append(cmds, cmd)
-
 		case vdState:
-
 			m.fmvTable.Blur()
 		}
 	}
@@ -208,12 +210,6 @@ func (m Model) View() string {
 		accii := lipgloss.NewStyle().Padding(0, 4).Foreground(lipgloss.Color("11"))
 		tablePadding := lipgloss.NewStyle().Padding(1, 4)
 
-		/*
-			vdTitle := header.Render("\n\nVelocidrone Times\n")
-			vdTable := m.vdTable.View()
-			vdBody := padding.Render(lipgloss.JoinVertical(lipgloss.Center, vdTitle, vdTable))
-		*/
-
 		vdSearchBody := docStyle.Render(m.vdSearch.View())
 
 		num := strconv.Itoa(len(m.fmvVoiceList))
@@ -251,15 +247,11 @@ func (m Model) View() string {
 
 		r1s := lipgloss.JoinHorizontal(lipgloss.Center, gold, magenta, cyan, orange, green)
 		r1 := tablePadding.Render(r1s)
-		//r2 := lipgloss.JoinHorizontal(lipgloss.Center, orange, green)
-
-		//groupBody := lipgloss.JoinVertical(lipgloss.Center, r1, r2)
 
 		groupBody := lipgloss.JoinVertical(lipgloss.Center, view, r1)
 		return groupBody
 
 	default:
-
 		body := m.csvForm.View()
 		return body
 	}
@@ -419,9 +411,16 @@ func (m Model) makeVDTable() []table.Row {
 }
 
 func (m Model) Checkin(r table.Row) {
+	var nulFmvVoice rt.FmvVoicePilot
 	for _, i := range m.fmvVoiceList {
 		if r[0] == i.VdName {
-			i.Status = "Entered"
+			switch i.Status {
+			case nulFmvVoice.VdName:
+				i.Status = "Entered"
+			case "Entered":
+				i.Status = nulFmvVoice.VdName
+			}
+
 		}
 	}
 }
@@ -488,6 +487,5 @@ func (m Model) makeList() list.Model {
 		//items = append(items, obj)
 		m.vdSearch.InsertItem(99999, obj)
 	}
-
 	return m.vdSearch
 }

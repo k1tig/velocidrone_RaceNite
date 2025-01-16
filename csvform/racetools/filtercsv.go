@@ -44,11 +44,9 @@ func GetVdRacers(filename string) []*VdPilot {
 	if err := gocsv.UnmarshalFile(raceFile, &Clients); err != nil { // Load clients from file
 		panic(err)
 	}
-	for _, client := range Clients { //clients are the master qual times
-		if client.ModelName == "TBS Spec" || client.ModelName == "Twig XL 3" {
-			OkRaceClass = append(OkRaceClass, client) // checkedIn seperates the class of quads from the master list
-		}
-	}
+
+	OkRaceClass = append(OkRaceClass, Clients...) //need to add form option for Spec filtering later
+
 	if _, err := raceFile.Seek(0, 0); err != nil { // Go to the start of the file
 		panic(err)
 	}
@@ -135,7 +133,7 @@ func RaceArray(vdList [][]string) [][][]string {
 }
 
 func BindLists(vdl []*VdPilot, fmvl []*FmvVoicePilot, dcl []*DiscordIds) []*FmvVoicePilot {
-	var bound []*FmvVoicePilot
+	//var bound []*FmvVoicePilot
 
 	for _, f := range fmvl {
 		for _, d := range dcl {
@@ -151,14 +149,15 @@ func BindLists(vdl []*VdPilot, fmvl []*FmvVoicePilot, dcl []*DiscordIds) []*FmvV
 				f.QualifyingTime = v.QualifyingTime
 				f.ModelName = v.ModelName
 				f.RacerName = v.VelocidronName
-				bound = append(bound, f)
 				break
 			}
+			var fmvNul FmvVoicePilot
+			if f.VdName == fmvNul.VdName {
+				f.QualifyingTime = "CHECK IN Please!"
+			}
+
 		}
-		if f.VdName == "" {
-			f.QualifyingTime = "CHECK IN Please!"
-			bound = append(bound, f)
-		}
+
 	}
-	return bound
+	return fmvl
 }
