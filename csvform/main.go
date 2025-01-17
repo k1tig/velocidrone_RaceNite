@@ -7,6 +7,7 @@ import (
 
 	"strconv"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -71,6 +72,41 @@ type Model struct {
 	fmvTable table.Model
 
 	vdSearch list.Model
+
+	listKeys  *listKeyMap
+	tableKeys *tableKeyMap
+}
+
+type listKeyMap struct {
+	updateRacer key.Binding // need to check func to make sure vd Racer name isn't already on the list
+}
+
+type tableKeyMap struct {
+	toggleStatus   key.Binding
+	updateBrackets key.Binding
+}
+
+func newListKeyMap() *listKeyMap {
+	return &listKeyMap{
+		updateRacer: key.NewBinding(
+			key.WithKeys("r"),
+			key.WithHelp("r", "Update Highligted FMV"),
+		),
+	}
+}
+
+func newTableKepMap() *tableKeyMap {
+	return &tableKeyMap{
+		toggleStatus: key.NewBinding(
+			key.WithKeys("a"),
+			key.WithHelp("a", "Toggle  Status"),
+		),
+
+		updateBrackets: key.NewBinding(
+			key.WithKeys("G", "g"),
+			key.WithHelp("G/g", "Update Groups"),
+		),
+	}
 }
 
 type Styles struct {
@@ -106,14 +142,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "esc", "q":
-			if m.vdSearch.FilterState() != list.Filtering {
+			if m.vdSearch.FilterState() != list.Filtering { // All of these commands need to be made into custom comands to not overlap models
 				return m, tea.Quit
 			}
 
 		case "`":
 			m.csvForm.State = huh.StateNormal
 			m.csvForm = NewModel().csvForm
-			return m, cmd
 		case "tab":
 			if m.csvForm.State == huh.StateCompleted {
 				if m.state == fmvState {
@@ -122,7 +157,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.state = fmvState
 				}
 			}
-			return m, cmd
 		case "A":
 			for _, i := range m.fmvVoiceList {
 				x := table.Row{i.RacerName}
