@@ -106,7 +106,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "esc", "q":
-			return m, tea.Quit
+			if m.vdSearch.FilterState() != list.Filtering {
+				return m, tea.Quit
+			}
+
 		case "`":
 			m.csvForm.State = huh.StateNormal
 			m.csvForm = NewModel().csvForm
@@ -120,8 +123,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			return m, cmd
-
-		case "A", "a":
+		case "A":
+			for _, i := range m.fmvVoiceList {
+				x := table.Row{i.RacerName}
+				m.Checkin(x)
+			}
+			fmvRows := m.makeFMVTable()
+			m.fmvTable.SetRows(fmvRows)
+		case "a":
 			if m.state == fmvState {
 				x := m.fmvTable.SelectedRow()
 				m.Checkin(x)
@@ -221,7 +230,7 @@ func (m Model) View() string {
 		fmvText := accii.Render(fmvTag)
 
 		body := lipgloss.JoinHorizontal(lipgloss.Center, tables, fmvText)
-		footer := "\nUse 'tab' to change lists\n"
+		footer := "\n Tab: change list, A: add all to group, a: add selected to group, G/g: make group tables  \n"
 		view := lipgloss.JoinVertical(lipgloss.Left, body, footer)
 
 		//bracket groups section
