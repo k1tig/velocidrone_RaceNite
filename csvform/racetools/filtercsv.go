@@ -143,17 +143,16 @@ func BindLists(vdl []*VdPilot, fmvl []*FmvVoicePilot, dcl []*DiscordIds) []*FmvV
 			}
 		}
 	}
-	for _, f := range fmvl {
+	for _, fmv := range fmvl {
 		for _, v := range vdl {
-			if v.VelocidronName == f.VdName || f.RacerName == v.VelocidronName {
-				f.QualifyingTime = v.QualifyingTime
-				f.ModelName = v.ModelName
-				f.RacerName = v.VelocidronName
+			if v.VelocidronName == fmv.VdName || fmv.RacerName == v.VelocidronName {
+				fmv.QualifyingTime = v.QualifyingTime
+				fmv.ModelName = v.ModelName
 				break
 			}
 			var fmvNul FmvVoicePilot
-			if f.VdName == fmvNul.VdName {
-				f.QualifyingTime = "CHECK IN Please!"
+			if fmv.QualifyingTime == fmvNul.QualifyingTime {
+				fmv.QualifyingTime = "CHECK IN Please!"
 			}
 
 		}

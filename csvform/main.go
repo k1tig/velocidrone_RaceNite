@@ -151,9 +151,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			}
 		case "R", "r":
-			if m.state == fmvState {
-				m.fmvTable.SelectedRow()
-			}
+			m.VdUpdateFmvObj()
+			fmvRows := m.makeFMVTable()
+			m.fmvTable.SetRows(fmvRows)
 		}
 
 		switch m.state {
@@ -308,8 +308,9 @@ func NewModel() Model {
 	}
 
 	fmvColumns := []table.Column{
-		{Title: "Name", Width: 16},
-		{Title: "Qualify time", Width: 14},
+		{Title: "Pilot", Width: 16},
+		{Title: "VD Name", Width: 16},
+		{Title: "Qualify time", Width: 16},
 		{Title: "Status", Width: 10},
 	}
 
@@ -385,13 +386,14 @@ func (m Model) makeFMVTable() []table.Row {
 		var fmvNul rt.FmvVoicePilot
 		var status string
 		name := i.RacerName
+		vdName := i.VdName
 		qtime := i.QualifyingTime
 		if i.Status == fmvNul.Status {
-			status = "Missing"
+			status = "-"
 		} else {
 			status = i.Status
 		}
-		s = append(s, name, qtime, status)
+		s = append(s, name, vdName, qtime, status)
 		rows = append(rows, s)
 	}
 	return rows
@@ -410,17 +412,36 @@ func (m Model) makeVDTable() []table.Row {
 	return rows
 }
 
+var nulFmvVoice = rt.FmvVoicePilot{Status: "-"}
+
 func (m Model) Checkin(r table.Row) {
-	var nulFmvVoice rt.FmvVoicePilot
+
 	for _, i := range m.fmvVoiceList {
-		if r[0] == i.VdName {
+		if r[0] == i.RacerName {
 			switch i.Status {
 			case nulFmvVoice.VdName:
-				i.Status = "Entered"
+				if i.QualifyingTime != "CHECK IN Please!" {
+					i.Status = "Entered"
+				}
 			case "Entered":
 				i.Status = nulFmvVoice.VdName
 			}
+		}
+	}
+}
 
+func (m Model) VdUpdateFmvObj() {
+	r := m.fmvTable.SelectedRow()
+	listItem := m.vdSearch.SelectedItem().FilterValue()
+	for _, i := range m.fmvVoiceList {
+		if r[0] == i.RacerName {
+			for _, x := range m.vdList {
+				if x.VelocidronName == listItem {
+					i.VdName = x.VelocidronName
+					i.QualifyingTime = x.QualifyingTime
+					i.ModelName = x.ModelName
+				}
+			}
 		}
 	}
 }
