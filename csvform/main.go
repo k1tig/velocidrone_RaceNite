@@ -119,7 +119,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
-		case "esc", "q":
+		case "q":
 			if m.vdSearch.FilterState() != list.Filtering { // All of these commands need to be made into custom comands to not overlap models
 				return m, tea.Quit
 			}
@@ -136,70 +136,80 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "a", "A":
-			listItem := m.vdSearch.SelectedItem().FilterValue()
-			pilotFlag := false
-			for _, i := range m.fmvVoiceList {
-				if i.VdName == listItem {
-					pilotFlag = true
-					break
+			if m.vdSearch.FilterState() != list.Filtering {
+				listItem := m.vdSearch.SelectedItem().FilterValue()
+				pilotFlag := false
+				for _, i := range m.fmvVoiceList {
+					if i.VdName == listItem {
+						pilotFlag = true
+						break
+					}
 				}
-			}
 
-			if !pilotFlag {
-				for _, i := range m.vdList {
-					if i.VelocidronName == listItem {
-						var x rt.FmvVoicePilot
-						x.RacerName = i.VelocidronName
-						x.VdName = i.VelocidronName
-						x.QualifyingTime = i.QualifyingTime
-						x.ModelName = i.ModelName
-						m.fmvVoiceList = append(m.fmvVoiceList, &x)
-						fmvrows := m.makeFMVTable()
-						m.fmvTable.SetRows(fmvrows)
+				if !pilotFlag {
+					for _, i := range m.vdList {
+						if i.VelocidronName == listItem {
+							var x rt.FmvVoicePilot
+							x.RacerName = i.VelocidronName
+							x.VdName = i.VelocidronName
+							x.QualifyingTime = i.QualifyingTime
+							x.ModelName = i.ModelName
+							m.fmvVoiceList = append(m.fmvVoiceList, &x)
+							fmvrows := m.makeFMVTable()
+							m.fmvTable.SetRows(fmvrows)
+						}
 					}
 				}
 			}
 
 		case "C":
-			for _, i := range m.fmvVoiceList {
-				x := table.Row{i.RacerName}
-				m.Checkin(x)
+			if m.vdSearch.FilterState() != list.Filtering {
+				for _, i := range m.fmvVoiceList {
+					x := table.Row{i.RacerName}
+					m.Checkin(x)
+				}
+				fmvRows := m.makeFMVTable()
+				m.fmvTable.SetRows(fmvRows)
 			}
-			fmvRows := m.makeFMVTable()
-			m.fmvTable.SetRows(fmvRows)
+
 		case "c":
-			if m.state == fmvState {
+			if m.vdSearch.FilterState() != list.Filtering {
 				x := m.fmvTable.SelectedRow()
 				m.Checkin(x)
 				fmvRows := m.makeFMVTable()
 				m.fmvTable.SetRows(fmvRows)
 			}
-			return m, cmd
 
 		case "G", "g":
-			var clearRows = []table.Row{}
-			for i := 0; i < 5; i++ {
-				m.groups[i].SetRows(clearRows)
-			}
-			list := m.addRacingList()      // order lists of entered
-			brackets := rt.RaceArray(list) //
-			//m.makeBrackets(brackets)       //allocates racers to groups
-			indexLen := len(brackets)
-			for i := 0; i < indexLen; i++ {
-				rows := []table.Row{}
-				for _, x := range brackets[i] {
-					rows = append(rows, x)
-					m.groups[i].SetRows(rows)
+			if m.vdSearch.FilterState() != list.Filtering {
+				var clearRows = []table.Row{}
+				for i := 0; i < 5; i++ {
+					m.groups[i].SetRows(clearRows)
+				}
+				list := m.addRacingList()      // order lists of entered
+				brackets := rt.RaceArray(list) //
+				//m.makeBrackets(brackets)       //allocates racers to groups
+				indexLen := len(brackets)
+				for i := 0; i < indexLen; i++ {
+					rows := []table.Row{}
+					for _, x := range brackets[i] {
+						rows = append(rows, x)
+						m.groups[i].SetRows(rows)
+					}
+				}
+				for i := 1; i < 5; i++ {
+					m.groups[i].Blur()
+
 				}
 			}
-			for i := 1; i < 5; i++ {
-				m.groups[i].Blur()
 
-			}
 		case "R", "r":
-			m.VdUpdateFmvObj()
-			fmvRows := m.makeFMVTable()
-			m.fmvTable.SetRows(fmvRows)
+			if m.vdSearch.FilterState() != list.Filtering {
+				m.VdUpdateFmvObj()
+				fmvRows := m.makeFMVTable()
+				m.fmvTable.SetRows(fmvRows)
+			}
+
 		}
 
 		switch m.state {
