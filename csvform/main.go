@@ -72,18 +72,10 @@ type Model struct {
 	fmvTable table.Model
 
 	vdSearch list.Model
-
-	listKeys  *listKeyMap
-	tableKeys *tableKeyMap
 }
 
 type listKeyMap struct {
 	updateRacer key.Binding // need to check func to make sure vd Racer name isn't already on the list
-}
-
-type tableKeyMap struct {
-	toggleStatus   key.Binding
-	updateBrackets key.Binding
 }
 
 func newListKeyMap() *listKeyMap {
@@ -91,20 +83,6 @@ func newListKeyMap() *listKeyMap {
 		updateRacer: key.NewBinding(
 			key.WithKeys("r"),
 			key.WithHelp("r", "Update Highligted FMV"),
-		),
-	}
-}
-
-func newTableKepMap() *tableKeyMap {
-	return &tableKeyMap{
-		toggleStatus: key.NewBinding(
-			key.WithKeys("a"),
-			key.WithHelp("a", "Toggle  Status"),
-		),
-
-		updateBrackets: key.NewBinding(
-			key.WithKeys("G", "g"),
-			key.WithHelp("G/g", "Update Groups"),
 		),
 	}
 }
@@ -157,14 +135,39 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.state = fmvState
 				}
 			}
-		case "A":
+		case "a", "A":
+			listItem := m.vdSearch.SelectedItem().FilterValue()
+			pilotFlag := false
+			for _, i := range m.fmvVoiceList {
+				if i.VdName == listItem {
+					pilotFlag = true
+					break
+				}
+			}
+
+			if !pilotFlag {
+				for _, i := range m.vdList {
+					if i.VelocidronName == listItem {
+						var x rt.FmvVoicePilot
+						x.RacerName = i.VelocidronName
+						x.VdName = i.VelocidronName
+						x.QualifyingTime = i.QualifyingTime
+						x.ModelName = i.ModelName
+						m.fmvVoiceList = append(m.fmvVoiceList, &x)
+						fmvrows := m.makeFMVTable()
+						m.fmvTable.SetRows(fmvrows)
+					}
+				}
+			}
+
+		case "C":
 			for _, i := range m.fmvVoiceList {
 				x := table.Row{i.RacerName}
 				m.Checkin(x)
 			}
 			fmvRows := m.makeFMVTable()
 			m.fmvTable.SetRows(fmvRows)
-		case "a":
+		case "c":
 			if m.state == fmvState {
 				x := m.fmvTable.SelectedRow()
 				m.Checkin(x)
@@ -358,7 +361,6 @@ func NewModel() Model {
 	}
 
 	rows := []table.Row{}
-
 	gt := table.New( //for color groups display
 		table.WithColumns(gColumns),
 		table.WithRows(rows),
@@ -414,9 +416,18 @@ func NewModel() Model {
 		Underline(true)
 
 	m.groups = groupTlist
+
 	m.vdTable = vdTable
 	m.fmvTable = fmvTable
+
 	m.state = formState
+
+	listKeys := newListKeyMap()
+	m.vdSearch.AdditionalFullHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			listKeys.updateRacer,
+		}
+	}
 
 	return m
 }
