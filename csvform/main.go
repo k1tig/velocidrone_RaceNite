@@ -166,7 +166,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.vdSearch.FilterState() != list.Filtering {
 				for _, i := range m.fmvVoiceList {
 					x := table.Row{i.RacerName}
-					m.Checkin(x)
+					m.CheckinAll(x)
 				}
 				fmvRows := m.makeFMVTable()
 				m.fmvTable.SetRows(fmvRows)
@@ -375,7 +375,7 @@ func NewModel() Model {
 		table.WithColumns(gColumns),
 		table.WithRows(rows),
 		table.WithFocused(false),
-		table.WithHeight(8),
+		table.WithHeight(10),
 	)
 
 	vdTable := table.New(
@@ -479,7 +479,6 @@ func (m Model) makeVDTable() []table.Row {
 var nulFmvVoice = rt.FmvVoicePilot{Status: "-"}
 
 func (m Model) Checkin(r table.Row) {
-
 	for _, i := range m.fmvVoiceList {
 		if r[0] == i.RacerName {
 			switch i.Status {
@@ -489,6 +488,16 @@ func (m Model) Checkin(r table.Row) {
 				}
 			case "Entered":
 				i.Status = nulFmvVoice.VdName
+			}
+		}
+	}
+}
+
+func (m Model) CheckinAll(r table.Row) {
+	for _, i := range m.fmvVoiceList {
+		if r[0] == i.RacerName {
+			if i.QualifyingTime != "CHECK IN Please!" {
+				i.Status = "Entered"
 			}
 		}
 	}
