@@ -424,7 +424,7 @@ func (m Model) View() string {
 
 func main() {
 
-	if _, err := tea.NewProgram(NewModel()).Run(); err != nil {
+	if _, err := tea.NewProgram(NewModel(), tea.WithAltScreen()).Run(); err != nil {
 		fmt.Println("Bummer, there's been an error:", err)
 		os.Exit(1)
 	}
