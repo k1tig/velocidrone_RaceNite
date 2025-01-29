@@ -27,8 +27,11 @@ var (
 
 var (
 	baseStyle = lipgloss.NewStyle().
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("236"))
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("236"))
+
+	docStyle = lipgloss.NewStyle().Padding(7, 14, 0, 0) // for list
+
 )
 
 var fmvTag string = `
@@ -68,7 +71,6 @@ type Model struct {
 	vdList       []*rt.VdPilot
 
 	groups   []table.Model
-	vdTable  table.Model
 	fmvTable table.Model
 
 	vdSearch list.Model
@@ -76,15 +78,6 @@ type Model struct {
 
 type listKeyMap struct {
 	updateRacer key.Binding // need to check func to make sure vd Racer name isn't already on the list
-}
-
-func newListKeyMap() *listKeyMap {
-	return &listKeyMap{
-		updateRacer: key.NewBinding(
-			key.WithKeys("r"),
-			key.WithHelp("r", "Update Highligted FMV"),
-		),
-	}
 }
 
 type Styles struct {
@@ -97,12 +90,129 @@ type Styles struct {
 	Help lipgloss.Style
 }
 
+var nulFmvVoice = rt.FmvVoicePilot{Status: "-"}
+
 func NewStyles(lg *lipgloss.Renderer) *Styles {
 	s := Styles{}
 	s.Base = lg.NewStyle().
 		Padding(1, 4, 0, 1)
 
 	return &s
+}
+
+func newListKeyMap() *listKeyMap {
+	return &listKeyMap{
+		updateRacer: key.NewBinding(
+			key.WithKeys("r"),
+			key.WithHelp("r", "Update Highligted FMV"),
+		),
+	}
+}
+
+func NewModel() Model {
+
+	m := Model{}
+	m.lg = lipgloss.DefaultRenderer()
+	m.styles = NewStyles(m.lg)
+
+	m.csvForm = huh.NewForm(
+		huh.NewGroup(
+			huh.NewFilePicker().
+				Title("Velocidrone File").
+				Description("CSV file for Veloidrone track").
+				AllowedTypes([]string{".csv"}).
+				Key("vd"),
+
+			huh.NewFilePicker().
+				Title("FMV Voice File").
+				Description("CSV of FMV voice with User and ID flags").
+				AllowedTypes([]string{".csv"}).
+				Key("fmv"),
+
+			huh.NewFilePicker().
+				Title("Discord File").
+				Description("CSV record of discord ID's and respective VD names").
+				AllowedTypes([]string{".csv"}).
+				Key("discord"),
+		),
+	).WithWidth(65).
+		WithShowHelp(true).
+		WithShowErrors(false)
+
+	gColumns := []table.Column{
+		{Title: "Name", Width: 11},
+		{Title: "Time", Width: 6},
+		{Title: "Craft", Width: 9},
+	}
+
+	fmvColumns := []table.Column{
+		{Title: "Pilot", Width: 16},
+		{Title: "VD Name", Width: 16},
+		{Title: "Qualify time", Width: 16},
+		{Title: "Status", Width: 10},
+	}
+
+	rows := []table.Row{}
+	gt := table.New( //for color groups display
+		table.WithColumns(gColumns),
+		table.WithRows(rows),
+		table.WithFocused(false),
+		table.WithHeight(10),
+	)
+
+	fmvTable := table.New(
+		table.WithColumns(fmvColumns),
+		table.WithRows(rows),
+		table.WithFocused(true),
+		table.WithHeight(12),
+	)
+	s := table.DefaultStyles()
+	s.Header = s.Header.
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("ffb3fd")).
+		Foreground(lipgloss.Color("239")).
+		BorderBottom(true).
+		Bold(false)
+	s.Selected = s.Selected.
+		Background(lipgloss.Color("128"))
+	fmvTable.SetStyles(s)
+
+	var groupTlist []table.Model
+	group := table.DefaultStyles()
+	group.Cell = group.Cell.
+		UnsetForeground().
+		Foreground(lipgloss.Color("172"))
+	group.Selected = group.Selected.
+		UnsetForeground().
+		Foreground(lipgloss.Color("118"))
+	gt.SetStyles(group)
+
+	g1, g2, g3, g4, g5 := gt, gt, gt, gt, gt
+	groupTlist = append(groupTlist, g1, g2, g3, g4, g5) // fix this ugly thing, just broken down to test
+
+	var items = []list.Item{}
+	m.vdSearch = list.New(items, list.NewDefaultDelegate(), 0, 0)
+	m.vdSearch.Title = "Velocidrone Times"
+	m.vdSearch.Styles.Title = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("178")).
+		Background(lipgloss.Color("0")).
+		Bold(true).
+		Underline(true)
+
+	m.groups = groupTlist
+
+	m.fmvTable = fmvTable
+
+	m.state = formState
+
+	listKeys := newListKeyMap()
+	m.vdSearch.AdditionalFullHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			listKeys.updateRacer,
+		}
+	}
+
+	return m
 }
 
 func (m Model) Init() tea.Cmd { return m.csvForm.Init() }
@@ -166,7 +276,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.vdSearch.FilterState() != list.Filtering {
 				for _, i := range m.fmvVoiceList {
 					x := table.Row{i.RacerName}
-					m.Checkin(x)
+					m.CheckinAll(x)
 				}
 				fmvRows := m.makeFMVTable()
 				m.fmvTable.SetRows(fmvRows)
@@ -238,8 +348,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			fmvrows := m.makeFMVTable()
 			m.fmvTable.SetRows(fmvrows) //builds the fmv table from csv
-			vdrows := m.makeVDTable()
-			m.vdTable.SetRows(vdrows) // builds the vd table from vd
 
 			m.vdSearch = m.makeList()
 
@@ -316,130 +424,10 @@ func (m Model) View() string {
 
 func main() {
 
-	if _, err := tea.NewProgram(NewModel()).Run(); err != nil {
+	if _, err := tea.NewProgram(NewModel(), tea.WithAltScreen()).Run(); err != nil {
 		fmt.Println("Bummer, there's been an error:", err)
 		os.Exit(1)
 	}
-}
-
-func NewModel() Model {
-
-	m := Model{}
-	m.lg = lipgloss.DefaultRenderer()
-	m.styles = NewStyles(m.lg)
-
-	m.csvForm = huh.NewForm(
-		huh.NewGroup(
-			huh.NewFilePicker().
-				Title("Velocidrone File").
-				Description("CSV file for Veloidrone track").
-				AllowedTypes([]string{".csv"}).
-				Key("vd"),
-
-			huh.NewFilePicker().
-				Title("FMV Voice File").
-				Description("CSV of FMV voice with User and ID flags").
-				AllowedTypes([]string{".csv"}).
-				Key("fmv"),
-
-			huh.NewFilePicker().
-				Title("Discord File").
-				Description("CSV record of discord ID's and respective VD names").
-				AllowedTypes([]string{".csv"}).
-				Key("discord"),
-		),
-	).WithWidth(65).
-		WithShowHelp(true).
-		WithShowErrors(false)
-
-	gColumns := []table.Column{
-		{Title: "Name", Width: 11},
-		{Title: "Time", Width: 6},
-		{Title: "Craft", Width: 9},
-	}
-	vdColumns := []table.Column{
-		{Title: "Name", Width: 16},
-		{Title: "Time", Width: 8},
-		{Title: "Craft", Width: 10},
-	}
-
-	fmvColumns := []table.Column{
-		{Title: "Pilot", Width: 16},
-		{Title: "VD Name", Width: 16},
-		{Title: "Qualify time", Width: 16},
-		{Title: "Status", Width: 10},
-	}
-
-	rows := []table.Row{}
-	gt := table.New( //for color groups display
-		table.WithColumns(gColumns),
-		table.WithRows(rows),
-		table.WithFocused(false),
-		table.WithHeight(8),
-	)
-
-	vdTable := table.New(
-		table.WithColumns(vdColumns),
-		table.WithRows(rows),
-		table.WithFocused(false),
-		table.WithHeight(12),
-	)
-
-	fmvTable := table.New(
-		table.WithColumns(fmvColumns),
-		table.WithRows(rows),
-		table.WithFocused(true),
-		table.WithHeight(12),
-	)
-	s := table.DefaultStyles()
-	s.Header = s.Header.
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("ffb3fd")).
-		Foreground(lipgloss.Color("239")).
-		BorderBottom(true).
-		Bold(false)
-	s.Selected = s.Selected.
-		Background(lipgloss.Color("128"))
-	fmvTable.SetStyles(s)
-	vdTable.SetStyles(s)
-
-	var groupTlist []table.Model
-	group := table.DefaultStyles()
-	group.Cell = group.Cell.
-		UnsetForeground().
-		Foreground(lipgloss.Color("172"))
-	group.Selected = group.Selected.
-		UnsetForeground().
-		Foreground(lipgloss.Color("118"))
-	gt.SetStyles(group)
-
-	g1, g2, g3, g4, g5 := gt, gt, gt, gt, gt
-	groupTlist = append(groupTlist, g1, g2, g3, g4, g5) // fix this ugly thing, just broken down to test
-
-	var items = []list.Item{}
-	m.vdSearch = list.New(items, list.NewDefaultDelegate(), 0, 0)
-	m.vdSearch.Title = "Velocidrone Times"
-	m.vdSearch.Styles.Title = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("178")).
-		Background(lipgloss.Color("0")).
-		Bold(true).
-		Underline(true)
-
-	m.groups = groupTlist
-
-	m.vdTable = vdTable
-	m.fmvTable = fmvTable
-
-	m.state = formState
-
-	listKeys := newListKeyMap()
-	m.vdSearch.AdditionalFullHelpKeys = func() []key.Binding {
-		return []key.Binding{
-			listKeys.updateRacer,
-		}
-	}
-
-	return m
 }
 
 func (m Model) makeFMVTable() []table.Row {
@@ -462,24 +450,8 @@ func (m Model) makeFMVTable() []table.Row {
 	}
 	return rows
 }
-func (m Model) makeVDTable() []table.Row {
-	rows := []table.Row{}
-	for _, i := range m.vdList {
-		var obj []string
-		var name, time, quad string
-		name = i.VelocidronName
-		time = i.QualifyingTime
-		quad = i.ModelName
-		obj = append(obj, name, time, quad)
-		rows = append(rows, obj)
-	}
-	return rows
-}
-
-var nulFmvVoice = rt.FmvVoicePilot{Status: "-"}
 
 func (m Model) Checkin(r table.Row) {
-
 	for _, i := range m.fmvVoiceList {
 		if r[0] == i.RacerName {
 			switch i.Status {
@@ -489,6 +461,16 @@ func (m Model) Checkin(r table.Row) {
 				}
 			case "Entered":
 				i.Status = nulFmvVoice.VdName
+			}
+		}
+	}
+}
+
+func (m Model) CheckinAll(r table.Row) {
+	for _, i := range m.fmvVoiceList {
+		if r[0] == i.RacerName {
+			if i.QualifyingTime != "CHECK IN Please!" {
+				i.Status = "Entered"
 			}
 		}
 	}
@@ -563,8 +545,6 @@ func (i item) Description() string {
 	return description
 }
 func (i item) FilterValue() string { return i.name }
-
-var docStyle = lipgloss.NewStyle().Padding(7, 14, 0, 0) // for list
 
 func (m Model) makeList() list.Model {
 	for _, i := range m.vdList {
