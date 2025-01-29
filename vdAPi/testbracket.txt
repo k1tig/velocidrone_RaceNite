@@ -1,0 +1,10 @@
+curl http://localhost:8080/brackets \
+--include \
+--header "Content-Type: application/json" \
+--request "POST" \
+--data '{"id": "Eedoks Room" , "racers ":  [ {"name" : "Eebok", "qualifytime": 69.420},{"name" : "Eedok", "qualifytime": 70.69} ] }'
+
+
+curl http://localhost:8080/brackets \
+    --header "Content-Type: application/json" \
+    --request "GET"
