@@ -34,14 +34,23 @@ func main() {
 }
 
 func initBracket(c *gin.Context) {
-	var initBracket Bracket
+	var newBracket Bracket
+	newBracketOK := true
 
-	if err := c.BindJSON(&initBracket); err != nil {
+	if err := c.BindJSON(&newBracket); err != nil {
 		return
 	}
-
-	Brackets = append(Brackets, initBracket)
-	c.IndentedJSON(http.StatusCreated, initBracket)
+	for _, i := range Brackets {
+		if i.BracketID == newBracket.BracketID {
+			c.IndentedJSON(http.StatusOK, gin.H{"message": " error, id already exists"}) // not correct status
+			newBracketOK = false
+			break
+		}
+	}
+	if newBracketOK {
+		Brackets = append(Brackets, newBracket)
+		c.IndentedJSON(http.StatusCreated, Brackets)
+	}
 
 }
 
@@ -57,14 +66,22 @@ func editBracket(c *gin.Context) {
 	id := c.Param("id")
 	for x, b := range Brackets {
 		if b.BracketID == id {
+			bracketUpdated := false
 			for i, oringalRacer := range b.Racers {
 				for _, editRacer := range bracket.Racers {
 					if editRacer.RaceID == oringalRacer.RaceID {
 						Brackets[x].Racers[i] = editRacer
+						if !bracketUpdated {
+							bracketUpdated = true
+						}
 					}
 				}
 			}
-			c.IndentedJSON(http.StatusOK, initBracket)
+			if bracketUpdated {
+				c.IndentedJSON(http.StatusOK, Brackets)
+			} else {
+				c.IndentedJSON(http.StatusOK, gin.H{"message": "no update to brackets"})
+			}
 			break
 		}
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "bracket not found"})
