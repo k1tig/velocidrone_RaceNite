@@ -64,7 +64,7 @@ func editBracket(c *gin.Context) {
 					}
 				}
 			}
-			c.IndentedJSON(http.StatusAccepted, initBracket)
+			c.IndentedJSON(http.StatusOK, initBracket)
 			break
 		}
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "bracket not found"})
