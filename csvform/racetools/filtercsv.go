@@ -44,8 +44,8 @@ func GetVdRacers(filename string) []*VdPilot {
 	if err := gocsv.UnmarshalFile(raceFile, &Clients); err != nil { // Load clients from file
 		panic(err)
 	}
-
-	OkRaceClass = append(OkRaceClass, Clients...) //need to add form option for Spec filtering later
+	//use OkRaceClass as a landing spot to filter Velocidrone list by spec
+	OkRaceClass = append(OkRaceClass, Clients...)
 
 	if _, err := raceFile.Seek(0, 0); err != nil { // Go to the start of the file
 		panic(err)
@@ -90,6 +90,7 @@ func GetDiscordId(discordCsv string) []*DiscordIds {
 }
 
 func RaceArray(vdList [][]string) [][][]string {
+	//makes a group of groups with the total amount of racers not exceeding a +1 differential
 	var maxGroupsize = 8
 	var grouplength int
 	var totalGroups int

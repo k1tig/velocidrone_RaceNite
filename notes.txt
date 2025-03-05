@@ -58,3 +58,14 @@ Display:
         2) Button to export csv of race
 
     
+
+
+
+
+
+
+    Todos:
+    - Make exit confirmation prompt. Maybe use huh.forms?
+    - Add Spec Class filtering in RT tools
+    ? Delegate common functions to a Utils files?
+    
