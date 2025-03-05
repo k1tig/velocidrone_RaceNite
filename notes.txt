@@ -1,0 +1,60 @@
+*Walkthrough of project*
+
+- Main Screen - 
+Options:
+    1) Create Race
+    2) Watch Race
+    3) Mod Race - Mods
+    4) Settings + General Help (ip adress setup here)
+
+
+- Create Race Screen -
+Display:
+    Short Description of files needed:
+    Import Discord Voice chat if being used. Is the easiest way to enforce that 
+    communication is being utilized during the race. Download the race records 
+    for the track from the Velocidrone track export button. If VD user# is known, 
+    a file can be made to pair the vd user by id# to the race track import sheet
+    
+    Actual Layout:
+        Form:
+            1) Group Name
+            2) Velocidrone Race Track CSV (optional)
+            3) Discord Voice Chat CSV (optional)
+            4) Velocidrone ID# / Discord ID# CSV (optional)
+            5) Manual Add (optional)      // How to verify everyone?
+
+    Produces:
+        1) Confirmation Page (review/submit)
+        2) Race Group Object
+
+
+- Watch Race Screen -
+Display:
+    Actual Layout: 
+        0) FMV Logo
+        1) Group Name Entry "Form"
+        2) Race Table
+        3) Groups Display
+        4) Help Buttons
+    
+
+- Mod Race Screens -
+Display: 
+    Primary:
+        0) FMV Logo
+        1) Race Table - With indicator of if active in 3-3-4 segment / lockout 
+        2) Incoming Heats
+        3) Groups Display
+        4) Help Buttons
+    Heat Entry:
+        1) List of Entries
+        2) Manual selection from sub-List
+        3) Race Table
+        4) Manual Entries Option (Access to master key of heat reports, Can also be used to backfill Missed races)
+    Completed Race:
+        0) FMV Logo
+        1) Race Table (locked)
+        2) Button to export csv of race
+
+    

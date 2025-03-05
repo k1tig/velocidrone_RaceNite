@@ -15,7 +15,7 @@ var person map[string]string
 
 func main() {
 	dialer := websocket.Dialer{}
-	conn, _, err := dialer.Dial("ws://192.168.68.83:60003/velocidrone", nil)
+	conn, _, err := dialer.Dial("ws://192.168.68.83:60003/velocidrone", nil) //check for static ip
 	if err != nil {
 		log.Panic(err)
 	}

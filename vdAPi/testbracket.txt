@@ -1,8 +1,8 @@
-curl http://localhost:8080/brackets \
---include \
---header "Content-Type: application/json" \
---request "POST" \
---data '{"bracketid": "69" , "racers ":  [ {"raceid" : 1, "name" : "Eebok", "qualifytime": 69.420},{"raceid": 2,"name" : "MrE", "qualifytime": 70.69} ] }'
+    curl http://localhost:8080/brackets \
+    --include \
+    --header "Content-Type: application/json" \
+    --request "POST" \
+    --data '{"bracketid": "69" , "racers ":  [ {"raceid" : 1, "name" : "Eebok", "qualifytime": 69.420},{"raceid": 2,"name" : "MrE", "qualifytime": 70.69} ] }'
 
 
 curl http://localhost:8080/brackets \

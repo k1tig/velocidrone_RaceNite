@@ -550,7 +550,7 @@ func (m Model) makeList() list.Model {
 	for _, i := range m.vdList {
 		obj := item{name: i.VelocidronName, time: i.QualifyingTime, craft: i.ModelName}
 		//items = append(items, obj)
-		m.vdSearch.InsertItem(99999, obj)
+		m.vdSearch.InsertItem(99999, obj) //out of range placement appends item to list
 	}
 	return m.vdSearch
 }
