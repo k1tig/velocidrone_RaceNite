@@ -385,7 +385,7 @@ func (m Model) View() string {
 		fmvText := accii.Render(fmvTag)
 
 		body := lipgloss.JoinHorizontal(lipgloss.Center, tables, fmvText)
-		footer := "\n Tab: change list, C: add all to group, c: add selected to group, G/g: make group tables  \n"
+		footer := "\n Tab: change list, C: add all to group, c: add selected to group, G/g: make group tables, r: add vd name to discord list\n"
 		view := lipgloss.JoinVertical(lipgloss.Left, body, footer)
 
 		//bracket groups section
