@@ -29,7 +29,6 @@ func (e entryForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		e = initForm()
 		e.form.Init()
 		e.formReady = true
-		return e, cmd
 
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
@@ -37,7 +36,15 @@ func (e entryForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return e, tea.Quit
 		}
 	}
+	if e.formReady { //to keep from trying to update the form before init()?
+		form, cmd := e.form.Update(msg)
+		if f, ok := form.(*huh.Form); ok {
+			e.form = f
+			return e, cmd
+		}
 
+	}
+	cmds = append(cmds, cmd)
 	return e, tea.Batch(cmds...)
 }
 func (e entryForm) View() string {
