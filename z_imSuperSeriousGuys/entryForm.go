@@ -50,7 +50,7 @@ func (e entryForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if e.form.State == huh.StateCompleted {
-			return tui.Update(msg)
+			return tui.Update(mainViewMsg())
 		}
 
 	}

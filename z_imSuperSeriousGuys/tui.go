@@ -22,6 +22,7 @@ const (
 	observeView
 	modView
 	settingsView
+	testView
 )
 
 type Tui struct {
@@ -111,7 +112,7 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(cmds...)
 		}
 	case mainMsg:
-		fmt.Println("bewbs")
+		m.state = testView
 	case entryForm:
 	}
 	return m, tea.Batch(cmds...)
@@ -121,6 +122,8 @@ func (m Tui) View() string {
 	if m.state != mainView {
 		switch m.state {
 		case csvView:
+		case testView:
+			return "\n" + "Booooooty"
 		}
 	}
 	return "\n" + m.list.View()
