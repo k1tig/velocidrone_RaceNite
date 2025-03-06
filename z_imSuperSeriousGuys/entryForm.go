@@ -1,0 +1,75 @@
+package main
+
+import (
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
+)
+
+type formMsg struct{}
+
+func formCmd() tea.Cmd {
+	return func() tea.Msg {
+		return formMsg{}
+	}
+}
+
+type entryForm struct {
+	form      *huh.Form
+	formReady bool
+}
+
+func (e entryForm) Init() tea.Cmd { return e.form.Init() }
+func (e entryForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		return e, nil
+	case formMsg:
+		e = initForm()
+		e.form.Init()
+		e.formReady = true
+		return e, cmd
+
+	case tea.KeyMsg:
+		switch keypress := msg.String(); keypress {
+		case "q", "ctrl+c":
+			return e, tea.Quit
+		}
+	}
+
+	return e, tea.Batch(cmds...)
+}
+func (e entryForm) View() string {
+	if e.formReady {
+		return e.form.View()
+	}
+	return "Form Not Generated"
+}
+func initForm() entryForm {
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewFilePicker().
+				Title("Velocidrone File").
+				Description("CSV file for Veloidrone track").
+				AllowedTypes([]string{".csv"}).
+				Key("vd"),
+
+			huh.NewFilePicker().
+				Title("FMV Voice File").
+				Description("CSV of FMV voice with User and ID flags").
+				AllowedTypes([]string{".csv"}).
+				Key("fmv"),
+
+			huh.NewFilePicker().
+				Title("Discord File").
+				Description("CSV record of discord ID's and respective VD names").
+				AllowedTypes([]string{".csv"}).
+				Key("discord"),
+		),
+	).WithWidth(65).
+		WithShowHelp(true).
+		WithShowErrors(false)
+	f := entryForm{form: form}
+	return f
+}
