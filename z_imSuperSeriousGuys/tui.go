@@ -24,7 +24,7 @@ const (
 	settingsView
 )
 
-type model struct {
+type Tui struct {
 	createForm entryForm
 	list       list.Model
 	state      viewState
@@ -62,7 +62,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	fmt.Fprint(w, fn(str))
 }
 
-func initTuiModel() model {
+func NewTui() *Tui {
 	const defaultWidth = 20
 	menuItems := []list.Item{
 		mi("Create Race"),
@@ -76,15 +76,15 @@ func initTuiModel() model {
 	l.Styles.Title = titleStyle
 	l.Styles.PaginationStyle = paginationStyle
 	l.Styles.HelpStyle = helpStyle
-	m := model{list: l, state: mainView}
-	return m
+
+	return &Tui{list: l, state: mainView}
 }
 
-func (m model) Init() tea.Cmd {
+func (m Tui) Init() tea.Cmd {
 	return nil
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
@@ -110,11 +110,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
 		}
+	case mainMsg:
+		fmt.Println("bewbs")
+	case entryForm:
 	}
 	return m, tea.Batch(cmds...)
 }
 
-func (m model) View() string {
+func (m Tui) View() string {
 	if m.state != mainView {
 		switch m.state {
 		case csvView:

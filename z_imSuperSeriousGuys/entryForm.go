@@ -13,6 +13,12 @@ func formCmd() tea.Cmd {
 	}
 }
 
+type mainMsg struct{}
+
+func mainViewMsg() tea.Msg {
+	return mainMsg{}
+}
+
 type entryForm struct {
 	form      *huh.Form
 	formReady bool
@@ -40,19 +46,26 @@ func (e entryForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		form, cmd := e.form.Update(msg)
 		if f, ok := form.(*huh.Form); ok {
 			e.form = f
-			return e, cmd
+			cmds = append(cmds, cmd)
+		}
+
+		if e.form.State == huh.StateCompleted {
+			return tui.Update(msg)
 		}
 
 	}
+
 	cmds = append(cmds, cmd)
 	return e, tea.Batch(cmds...)
 }
+
 func (e entryForm) View() string {
 	if e.formReady {
 		return e.form.View()
 	}
 	return "Form Not Generated"
 }
+
 func initForm() entryForm {
 	form := huh.NewForm(
 		huh.NewGroup(

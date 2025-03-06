@@ -7,8 +7,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+var tui *Tui
+
 func main() {
-	p := tea.NewProgram(initTuiModel())
+	tui = NewTui()
+	p := tea.NewProgram(tui)
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
