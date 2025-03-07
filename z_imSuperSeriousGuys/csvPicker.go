@@ -19,13 +19,13 @@ func mainViewMsg() tea.Msg {
 	return mainMsg{}
 }
 
-type entryForm struct {
+type csvForm struct {
 	form      *huh.Form
 	formReady bool
 }
 
-func (e entryForm) Init() tea.Cmd { return e.form.Init() }
-func (e entryForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (e csvForm) Init() tea.Cmd { return e.form.Init() }
+func (e csvForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
@@ -59,14 +59,14 @@ func (e entryForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return e, tea.Batch(cmds...)
 }
 
-func (e entryForm) View() string {
+func (e csvForm) View() string {
 	if e.formReady {
 		return e.form.View()
 	}
 	return "Form Not Generated"
 }
 
-func initForm() entryForm {
+func initForm() csvForm {
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewFilePicker().
@@ -90,6 +90,6 @@ func initForm() entryForm {
 	).WithWidth(65).
 		WithShowHelp(true).
 		WithShowErrors(false)
-	f := entryForm{form: form}
+	f := csvForm{form: form}
 	return f
 }

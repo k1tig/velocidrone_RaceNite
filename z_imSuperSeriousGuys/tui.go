@@ -26,7 +26,7 @@ const (
 )
 
 type Tui struct {
-	createForm entryForm
+	createForm csvForm
 	list       list.Model
 	state      viewState
 }
@@ -113,7 +113,7 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case mainMsg:
 		m.state = testView
-	case entryForm:
+	case csvForm:
 	}
 	return m, tea.Batch(cmds...)
 }
