@@ -123,7 +123,7 @@ func (m Tui) View() string {
 		switch m.state {
 		case csvView:
 		case testView:
-			return "\n" + "Booooooty"
+			return "\n" + "This will be the post csv pull View with the lists and tables"
 		}
 	}
 	return "\n" + m.list.View()
