@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -26,9 +27,14 @@ const (
 )
 
 type Tui struct {
-	createForm csvForm
-	list       list.Model
-	state      viewState
+	state viewState
+	list  list.Model
+
+	//Components for assembling the Race Roster
+	createForm  csvForm
+	colorGroups []table.Model
+	raceTable   table.Model
+	//vdSearch    list.Model
 }
 
 var (

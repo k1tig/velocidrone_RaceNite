@@ -16,8 +16,8 @@ type VdPilot struct { //struct to recieve data from velocidrone csv
 }
 
 type FmvVoicePilot struct {
-	RacerName      string `csv:"Display Name"`
-	VdName         string `csv:"VdName"`
+	RacerName      string `csv:"Display Name"` //called alias in
+	VdName         string `csv:"Player Name"`
 	QualifyingTime string
 	ModelName      string
 	Id             string `csv:"ID"`
@@ -25,8 +25,8 @@ type FmvVoicePilot struct {
 }
 
 type DiscordIds struct {
-	DiscordId string `csv:"DiscordId"`
-	VdName    string `csv:"VdName"`
+	DiscordId string `csv:"ID"`
+	VdName    string `csv:"Player Name"`
 }
 
 // take a list of racers and returns group sets of racers
@@ -133,18 +133,18 @@ func RaceArray(vdList [][]string) [][][]string {
 	return groupStructure
 }
 
-func BindLists(vdl []*VdPilot, fmvl []*FmvVoicePilot, dcl []*DiscordIds) []*FmvVoicePilot {
+func BindLists(vdl []*VdPilot, fmvList []*FmvVoicePilot, discordIdList []*DiscordIds) []*FmvVoicePilot {
 	//var bound []*FmvVoicePilot
 
-	for _, f := range fmvl {
-		for _, d := range dcl {
-			if d.DiscordId == f.Id {
-				d.VdName = f.VdName
+	for _, fmvPilot := range fmvList {
+		for _, discordId := range discordIdList {
+			if discordId.DiscordId == fmvPilot.Id {
+				fmvPilot.VdName = discordId.VdName
 
 			}
 		}
 	}
-	for _, fmv := range fmvl {
+	for _, fmv := range fmvList {
 		for _, v := range vdl {
 			if v.VelocidronName == fmv.VdName || fmv.RacerName == v.VelocidronName {
 				fmv.QualifyingTime = v.QualifyingTime
@@ -159,5 +159,5 @@ func BindLists(vdl []*VdPilot, fmvl []*FmvVoicePilot, dcl []*DiscordIds) []*FmvV
 		}
 
 	}
-	return fmvl
+	return fmvList
 }
