@@ -68,6 +68,7 @@ Display:
     - Make exit confirmation prompt. Maybe use huh.forms?
     - Add Spec Class filtering in RT tools
     ? Delegate common functions to a Utils files?
+    - Make sure the checkin page shows the total amount of participants and a number for those actively checked in.
     
 
 
