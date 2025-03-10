@@ -1,6 +1,6 @@
 package main
 
-//Pilot stuff
+// Pilot stuff
 type Pilot struct {
 	DiscordName    string `csv:"Display Name" json:"displayname"` // discord
 	VdName         string `csv:"Player Name" json:"vdname"`
