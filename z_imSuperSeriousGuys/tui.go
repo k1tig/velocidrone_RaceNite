@@ -123,11 +123,18 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list, cmd = m.list.Update(msg)
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
+		case createView:
+			m.fmvTable, cmd = m.fmvTable.Update(msg)
+			cmds = append(cmds, cmd)
 		}
 	case csvProcessedMsg:
 		lists := msg
-		m.fmvTable = buildFMVtable(lists[3])
+		m.registeredPilots = lists[3]
+		m.fmvTable = buildFMVtable(m.registeredPilots)
 		m.state = createView
+		m.fmvTable, cmd = m.fmvTable.Update(msg)
+		cmds = append(cmds, cmd)
+		return m, tea.Batch(cmds...)
 	case testMsg:
 		m.state = testView
 	}
