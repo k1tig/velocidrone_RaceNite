@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -32,8 +33,8 @@ type Tui struct {
 	//Components for assembling the Race Roster
 	createForm csvForm
 	//colorGroups []table.Model
-	//raceTable   table.Model
-	//vdSearch    list.Model
+	fmvTable table.Model
+	vdSearch list.Model
 
 	fmvPilots, velocidronePilots, registeredPilots []Pilot
 	discordCheatSheet                              []Pilot
@@ -125,7 +126,7 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case csvProcessedMsg:
 		lists := msg
-		m.discordCheatSheet, m.fmvPilots, m.velocidronePilots, m.registeredPilots = lists[0], lists[1], lists[2], lists[3]
+		m.fmvTable = buildFMVtable(lists[3])
 		m.state = createView
 	case testMsg:
 		m.state = testView
@@ -138,21 +139,8 @@ func (m Tui) View() string {
 	if m.state != mainView {
 		switch m.state {
 		case createView:
-			var view string
-			for _, i := range m.registeredPilots {
-				var list []string
-				discordUser := fmt.Sprintf("Discord User: %s\n", i.DiscordName)
-				discordID := fmt.Sprintf("Discord ID: %s\n", i.Id)
-				vdName := fmt.Sprintf("Velocidrone User: %s\n", i.VdName)
-				qualifyTime := fmt.Sprintf("Qualify Time: %s\n", i.QualifyingTime)
-				modelName := fmt.Sprintf("Craft Model: %s\n", i.ModelName)
-				status := fmt.Sprintf("Checkin Status: %s\n\n\n", i.Status)
-				list = append(list, discordUser, discordID, vdName, qualifyTime, modelName, status)
-				for _, line := range list {
-					view += line
-				}
-			}
-			return view
+			return m.fmvTable.View()
+
 		case testView:
 			return "Test View"
 		}

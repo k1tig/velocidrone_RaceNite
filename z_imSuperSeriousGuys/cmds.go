@@ -1,8 +1,9 @@
 package main
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type csvProcessedMsg [][]Pilot
@@ -16,8 +17,53 @@ func processForm(e *huh.Form) (d1, f1, v1, reg1 []Pilot) {
 
 }
 
+func buildFMVtable(boundList []Pilot) table.Model {
+	fmvColumns := []table.Column{
+		{Title: "Pilot", Width: 16},
+		{Title: "VD Name", Width: 16},
+		{Title: "Qualify time", Width: 16},
+		{Title: "Status", Width: 10},
+	}
+
+	rows := []table.Row{}
+
+	for _, i := range boundList {
+		var s []string
+		var status string
+		name := i.DiscordName
+		vdName := i.VdName
+		qtime := i.QualifyingTime
+		if i.Status == NulPilot.Status {
+			status = "-"
+		} else {
+			status = i.Status
+		}
+		s = append(s, name, vdName, qtime, status)
+		rows = append(rows, s)
+	}
+
+	fmvTable := table.New(
+		table.WithColumns(fmvColumns),
+		table.WithRows(rows),
+		table.WithFocused(true),
+		table.WithHeight(12),
+	)
+	s := table.DefaultStyles()
+	s.Header = s.Header.
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("ffb3fd")).
+		Foreground(lipgloss.Color("239")).
+		BorderBottom(true).
+		Bold(false)
+	s.Selected = s.Selected.
+		Background(lipgloss.Color("128"))
+	fmvTable.SetStyles(s)
+
+	return fmvTable
+}
+
 type testMsg struct{}
 
-func testCmd() tea.Msg {
+/*func testCmd() tea.Msg {
 	return testMsg{}
-}
+}*/
