@@ -50,7 +50,7 @@ func (e csvForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if e.form.State == huh.StateCompleted {
-			return tui.Update(mainViewMsg())
+			return tui.Update(e.csvProcessedCmd())
 		}
 
 	}

@@ -34,6 +34,9 @@ type Tui struct {
 	//colorGroups []table.Model
 	//raceTable   table.Model
 	//vdSearch    list.Model
+
+	fmvPilots, velocidronePilots, registeredPilots []Pilot
+	discordCheatSheet                              []Pilot
 }
 
 var (
@@ -118,7 +121,10 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case mainMsg:
 		m.state = testView
-	case csvForm:
+	case csvProcessedMsg:
+		lists := msg
+		m.discordCheatSheet, m.fmvPilots, m.velocidronePilots, m.registeredPilots = lists[0], lists[1], lists[2], lists[3]
+		m.state = createView
 	}
 	return m, tea.Batch(cmds...)
 }
@@ -127,8 +133,8 @@ func (m Tui) View() string {
 	if m.state != mainView {
 		switch m.state {
 		case csvView:
-		case testView:
-			return "\n" + "This will be the post csv pull View with the lists and tables"
+		case createView:
+			fmt.Println(m.registeredPilots)
 		}
 	}
 	return "\n" + m.list.View()
