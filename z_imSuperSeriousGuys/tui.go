@@ -101,6 +101,10 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetWidth(msg.Width)
 		return m, nil
 	case tea.KeyMsg:
+		switch keypress := msg.String(); keypress {
+		case "ctrl+c":
+			return m, tea.Quit
+		}
 		switch m.state {
 		case mainView:
 			switch keypress := msg.String(); keypress {
@@ -119,22 +123,38 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
 		}
-	case mainMsg:
-		m.state = testView
 	case csvProcessedMsg:
 		lists := msg
 		m.discordCheatSheet, m.fmvPilots, m.velocidronePilots, m.registeredPilots = lists[0], lists[1], lists[2], lists[3]
 		m.state = createView
+	case testMsg:
+		m.state = testView
 	}
 	return m, tea.Batch(cmds...)
+
 }
 
 func (m Tui) View() string {
 	if m.state != mainView {
 		switch m.state {
-		case csvView:
 		case createView:
-			fmt.Println(m.registeredPilots)
+			var view string
+			for _, i := range m.registeredPilots {
+				var list []string
+				discordUser := fmt.Sprintf("Discord User: %s\n", i.DiscordName)
+				discordID := fmt.Sprintf("Discord ID: %s\n", i.Id)
+				vdName := fmt.Sprintf("Velocidrone User: %s\n", i.VdName)
+				qualifyTime := fmt.Sprintf("Qualify Time: %s\n", i.QualifyingTime)
+				modelName := fmt.Sprintf("Craft Model: %s\n", i.ModelName)
+				status := fmt.Sprintf("Checkin Status: %s\n\n\n", i.Status)
+				list = append(list, discordUser, discordID, vdName, qualifyTime, modelName, status)
+				for _, line := range list {
+					view += line
+				}
+			}
+			return view
+		case testView:
+			return "Test View"
 		}
 	}
 	return "\n" + m.list.View()

@@ -13,12 +13,6 @@ func formCmd() tea.Cmd {
 	}
 }
 
-type mainMsg struct{}
-
-func mainViewMsg() tea.Msg {
-	return mainMsg{}
-}
-
 type csvForm struct {
 	form      *huh.Form
 	formReady bool
@@ -42,15 +36,19 @@ func (e csvForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return e, tea.Quit
 		}
 	}
+
+	//fix this to expire
 	if e.formReady { //to keep from trying to update the form before init()?
 		form, cmd := e.form.Update(msg)
 		if f, ok := form.(*huh.Form); ok {
 			e.form = f
 			cmds = append(cmds, cmd)
 		}
-
 		if e.form.State == huh.StateCompleted {
-			return tui.Update(e.csvProcessedCmd())
+			f := e.form
+			discord, fmv, vd, bound := processForm(f)
+			msg, cmd := tui.Update(csvProcessedMsg{discord, fmv, vd, bound})
+			return msg, cmd
 		}
 
 	}

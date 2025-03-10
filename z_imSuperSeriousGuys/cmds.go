@@ -1,19 +1,23 @@
 package main
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
+)
 
 type csvProcessedMsg [][]Pilot
 
-func (e csvForm) csvProcessedCmd() tea.Cmd {
-	return func() tea.Msg {
-		return e.processForm()
-	}
-}
-func (e csvForm) processForm() csvProcessedMsg {
-	discordTarget := GetDiscordId(e.form.GetString("discord"))
-	fmvTarget := GetFMVvoice(e.form.GetString("fmv"))
-	vdTarget := GetVdRacers(e.form.GetString("vd"))
+func processForm(e *huh.Form) (d1, f1, v1, reg1 []Pilot) {
+	discordTarget := GetDiscordId(e.GetString("discord"))
+	fmvTarget := GetFMVvoice(e.GetString("fmv"))
+	vdTarget := GetVdRacers(e.GetString("vd"))
 	registeredTarget := BindLists(vdTarget, fmvTarget, discordTarget)
-	return csvProcessedMsg{discordTarget, fmvTarget, vdTarget, registeredTarget}
+	return discordTarget, fmvTarget, vdTarget, registeredTarget
 
+}
+
+type testMsg struct{}
+
+func testCmd() tea.Msg {
+	return testMsg{}
 }

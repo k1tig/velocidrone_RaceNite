@@ -115,16 +115,18 @@ func BindLists(velocidroneList, fmvList, discordCheatSheet []Pilot) []Pilot {
 			}
 		}
 	}
-	for _, fmvPilot := range fmvList {
-		for fmvIndex, velocidronePilot := range velocidroneList {
+	for index, fmvPilot := range fmvList {
+		for _, velocidronePilot := range velocidroneList {
 			if velocidronePilot.VdName == fmvPilot.VdName || fmvPilot.DiscordName == velocidronePilot.VdName {
 				fmvPilot.QualifyingTime = velocidronePilot.QualifyingTime
 				fmvPilot.ModelName = velocidronePilot.ModelName
-				fmvList[fmvIndex] = fmvPilot
+				fmvPilot.VdName = velocidronePilot.VdName
+				fmvList[index] = fmvPilot
 				break
 			}
 			if fmvPilot.QualifyingTime == NulPilot.QualifyingTime {
-				fmvList[fmvIndex].QualifyingTime = "CHECK IN Please!"
+
+				fmvList[index].QualifyingTime = "CHECK IN Please!"
 			}
 		}
 	}
