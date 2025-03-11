@@ -15,6 +15,7 @@ import (
 )
 
 type viewState int
+type focused int
 
 const (
 	mainView viewState = iota
@@ -26,10 +27,16 @@ const (
 	testView
 )
 
+const (
+	fmvTable focused = iota
+	vdList
+)
+
 type Tui struct {
-	state  viewState
-	lg     *lipgloss.Renderer
-	styles *Styles
+	state   viewState
+	focused focused
+	lg      *lipgloss.Renderer
+	styles  *Styles
 
 	list list.Model
 
@@ -136,7 +143,23 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
 		case createView:
-			m.fmvTable, cmd = m.fmvTable.Update(msg)
+			switch keypress := msg.String(); keypress {
+			case "tab":
+				if m.focused == fmvTable {
+					m.fmvTable.Blur()
+					m.focused = vdList
+				} else {
+					m.focused = fmvTable
+					m.fmvTable.Focus()
+				}
+
+			}
+			switch m.focused {
+			case fmvTable:
+				m.fmvTable, cmd = m.fmvTable.Update(msg)
+			case vdList:
+				m.vdSearch, cmd = m.vdSearch.Update(msg)
+			}
 			cmds = append(cmds, cmd)
 		}
 	case csvProcessedMsg: //discord, fmv, vd, bound
@@ -147,6 +170,7 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.vdSearch = buildVelocidroneList(m.velocidronePilots)
 		m.state = createView
 		m.fmvTable, cmd = m.fmvTable.Update(msg)
+		m.focused = fmvTable
 		cmds = append(cmds, cmd)
 		return m, tea.Batch(cmds...)
 	case testMsg:
