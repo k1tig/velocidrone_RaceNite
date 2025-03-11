@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -15,6 +16,24 @@ func processForm(e *huh.Form) (d1, f1, v1, reg1 []Pilot) {
 	registeredTarget := BindLists(vdTarget, fmvTarget, discordTarget)
 	return discordTarget, fmvTarget, vdTarget, registeredTarget
 
+}
+
+func buildVelocidroneList(vdSheet []Pilot) list.Model {
+	var racers = []list.Item{}
+	vdList := list.New(racers, list.NewDefaultDelegate(), 0, 0)
+	vdList.Title = "Velocidrone Sheet"
+	vdList.Styles.Title = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("178")).
+		Background(lipgloss.Color("0")).
+		Bold(true).
+		Underline(true)
+	vdList.SetSize(20, 20)
+	for _, racer := range vdSheet {
+		obj := listRacer{name: racer.VdName, time: racer.QualifyingTime, craft: racer.ModelName}
+		//items = append(items, obj)
+		vdList.InsertItem(99999, obj) //out of range placement appends item to list
+	}
+	return vdList
 }
 
 func buildFMVtable(boundList []Pilot) table.Model {

@@ -1,5 +1,9 @@
 package main
 
+import "fmt"
+
+type Styles struct{}
+
 // Pilot stuff
 type Pilot struct {
 	DiscordName    string `csv:"Display Name" json:"displayname"` // discord
@@ -10,6 +14,15 @@ type Pilot struct {
 	Status         string //used for checkin placeholder
 }
 
-var NulPilot = Pilot{Status: "-"}
+var NulPilot Pilot
 
-type Styles struct{}
+type listRacer struct {
+	name, time, craft string
+}
+
+func (i listRacer) Title() string { return i.name }
+func (i listRacer) Description() string {
+	description := fmt.Sprintf("%s | %s", i.time, i.craft)
+	return description
+}
+func (i listRacer) FilterValue() string { return i.name }

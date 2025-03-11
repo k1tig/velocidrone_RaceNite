@@ -27,8 +27,11 @@ const (
 )
 
 type Tui struct {
-	state viewState
-	list  list.Model
+	state  viewState
+	lg     *lipgloss.Renderer
+	styles *Styles
+
+	list list.Model
 
 	//Components for assembling the Race Roster
 	createForm csvForm
@@ -39,6 +42,15 @@ type Tui struct {
 	fmvPilots, velocidronePilots, registeredPilots []Pilot
 	discordCheatSheet                              []Pilot
 }
+
+var (
+	baseStyle = lipgloss.NewStyle().
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("236"))
+
+	docStyle = lipgloss.NewStyle().Padding(7, 14, 0, 0) // for list
+
+)
 
 var (
 	titleStyle        = lipgloss.NewStyle().MarginLeft(2)
@@ -127,10 +139,12 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.fmvTable, cmd = m.fmvTable.Update(msg)
 			cmds = append(cmds, cmd)
 		}
-	case csvProcessedMsg:
+	case csvProcessedMsg: //discord, fmv, vd, bound
 		lists := msg
 		m.registeredPilots = lists[3]
 		m.fmvTable = buildFMVtable(m.registeredPilots)
+		m.velocidronePilots = lists[2]
+		m.vdSearch = buildVelocidroneList(m.velocidronePilots)
 		m.state = createView
 		m.fmvTable, cmd = m.fmvTable.Update(msg)
 		cmds = append(cmds, cmd)
@@ -146,7 +160,18 @@ func (m Tui) View() string {
 	if m.state != mainView {
 		switch m.state {
 		case createView:
-			return m.fmvTable.View()
+			header := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
+			padding := lipgloss.NewStyle().Padding(0, 2)
+			listpadding := lipgloss.NewStyle().Padding(2, 6)
+			num := "placeholder num"
+
+			fmvtitle := header.Render(fmt.Sprintf("\n\n FMV Voice Checkin (count:%s)\n", num))
+			fmvTable := m.fmvTable.View()
+			fmvBody := padding.Render(lipgloss.JoinVertical(lipgloss.Center, fmvtitle, fmvTable))
+
+			vdList := listpadding.Render(m.vdSearch.View())
+			body := lipgloss.JoinHorizontal(lipgloss.Top, vdList, fmvBody)
+			return body
 
 		case testView:
 			return "Test View"
