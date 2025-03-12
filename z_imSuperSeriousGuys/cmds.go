@@ -86,6 +86,24 @@ func updateFMVtable(boundList []Pilot) []table.Row {
 	return rows
 }
 
+func (m Tui) vdToFMVracer() {
+	r := m.fmvTable.SelectedRow()
+	listItem := m.vdSearch.SelectedItem().FilterValue()
+	for index, i := range m.registeredPilots {
+		if r[0] == i.DiscordName {
+			for _, x := range m.velocidronePilots {
+				if x.VdName == listItem {
+					i.VdName = x.VdName
+					i.QualifyingTime = x.QualifyingTime
+					i.ModelName = x.ModelName
+					m.registeredPilots[index] = i
+					return
+				}
+			}
+		}
+	}
+}
+
 type testMsg struct{}
 
 /*func testCmd() tea.Msg {

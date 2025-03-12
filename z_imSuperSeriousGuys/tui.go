@@ -140,7 +140,7 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.focused = fmvTable
 					m.fmvTable.Focus()
 				}
-			case "a", "A":
+			case "a", "A": // adds VdPilot to FMVbound list
 				if m.focused == vdList {
 					if m.vdSearch.FilterState() != list.Filtering {
 						listItem := m.vdSearch.SelectedItem().FilterValue()
@@ -166,6 +166,14 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 								}
 							}
 						}
+					}
+				}
+			case "R", "r": // updates FMV users info from VD list
+				if m.focused == vdList {
+					if m.vdSearch.FilterState() != list.Filtering {
+						m.vdToFMVracer()
+						fmvRows := updateFMVtable(m.registeredPilots)
+						m.fmvTable.SetRows(fmvRows)
 					}
 				}
 			}
