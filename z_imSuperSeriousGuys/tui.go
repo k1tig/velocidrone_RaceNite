@@ -140,7 +140,34 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.focused = fmvTable
 					m.fmvTable.Focus()
 				}
+			case "a", "A":
+				if m.focused == vdList {
+					if m.vdSearch.FilterState() != list.Filtering {
+						listItem := m.vdSearch.SelectedItem().FilterValue()
+						pilotFlag := false
+						for _, i := range m.registeredPilots {
+							if i.VdName == listItem {
+								pilotFlag = true
+								break
+							}
+						}
 
+						if !pilotFlag {
+							for _, i := range m.velocidronePilots {
+								if i.VdName == listItem {
+									var x Pilot
+									x.DiscordName = i.VdName
+									x.VdName = i.VdName
+									x.QualifyingTime = i.QualifyingTime
+									x.ModelName = i.ModelName
+									m.registeredPilots = append(m.registeredPilots, x)
+									fmvrows := updateFMVtable(m.registeredPilots)
+									m.fmvTable.SetRows(fmvrows)
+								}
+							}
+						}
+					}
+				}
 			}
 			switch m.focused {
 			case fmvTable:
