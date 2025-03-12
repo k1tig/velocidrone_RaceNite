@@ -168,7 +168,7 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}
 					}
 				}
-			case "R", "r": // updates FMV users info from VD list
+			case "E", "e": // updates FMV users info from VD list
 				if m.focused == vdList {
 					if m.vdSearch.FilterState() != list.Filtering {
 						m.vdToFMVracer()
@@ -177,20 +177,24 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 			case "C":
-				if m.vdSearch.FilterState() != list.Filtering {
-					for _, i := range m.registeredPilots {
-						x := table.Row{i.DiscordName}
-						m.CheckinAll(x)
+				if m.focused == fmvTable {
+					if m.vdSearch.FilterState() != list.Filtering {
+						for _, i := range m.registeredPilots {
+							x := table.Row{i.DiscordName}
+							m.CheckinAll(x)
+						}
+						fmvRows := updateFMVtable(m.registeredPilots)
+						m.fmvTable.SetRows(fmvRows)
 					}
-					fmvRows := updateFMVtable(m.registeredPilots)
-					m.fmvTable.SetRows(fmvRows)
 				}
 			case "c":
-				if m.vdSearch.FilterState() != list.Filtering {
-					x := m.fmvTable.SelectedRow()
-					m.Checkin(x)
-					fmvRows := updateFMVtable(m.registeredPilots)
-					m.fmvTable.SetRows(fmvRows)
+				if m.focused == fmvTable {
+					if m.vdSearch.FilterState() != list.Filtering {
+						x := m.fmvTable.SelectedRow()
+						m.Checkin(x)
+						fmvRows := updateFMVtable(m.registeredPilots)
+						m.fmvTable.SetRows(fmvRows)
+					}
 				}
 			}
 			switch m.focused {
@@ -222,9 +226,16 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Tui) View() string {
+	var helpText string
 	if m.state != mainView {
 		switch m.state {
 		case createView:
+
+			switch m.focused {
+			case vdList:
+				helpText = "~HELP KEYS~\nTab: focus table, A/a: add to fmv, E/e: assign vd item to FMV racer"
+			}
+
 			header := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
 			padding := lipgloss.NewStyle().Padding(0, 2)
 			listpadding := lipgloss.NewStyle().Padding(2, 6)
@@ -235,8 +246,9 @@ func (m Tui) View() string {
 			fmvBody := padding.Render(lipgloss.JoinVertical(lipgloss.Center, fmvtitle, fmvTable))
 
 			vdList := listpadding.Render(m.vdSearch.View())
-			body := lipgloss.JoinHorizontal(lipgloss.Top, vdList, fmvBody)
-			return body
+			body := lipgloss.JoinHorizontal(lipgloss.Top, vdList, fmvBody, fmvTag)
+			view := lipgloss.JoinVertical(lipgloss.Left, body, listpadding.Render(helpText))
+			return view
 
 		case testView:
 			return "Test View"

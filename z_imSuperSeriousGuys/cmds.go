@@ -27,7 +27,7 @@ func buildVelocidroneList(vdSheet []Pilot) list.Model {
 		Background(lipgloss.Color("0")).
 		Bold(true).
 		Underline(true)
-	vdList.SetSize(20, 20)
+	vdList.SetSize(28, 20)
 	for _, racer := range vdSheet {
 		obj := listRacer{name: racer.VdName, time: racer.QualifyingTime, craft: racer.ModelName}
 		//items = append(items, obj)
