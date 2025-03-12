@@ -176,6 +176,22 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.fmvTable.SetRows(fmvRows)
 					}
 				}
+			case "C":
+				if m.vdSearch.FilterState() != list.Filtering {
+					for _, i := range m.registeredPilots {
+						x := table.Row{i.DiscordName}
+						m.CheckinAll(x)
+					}
+					fmvRows := updateFMVtable(m.registeredPilots)
+					m.fmvTable.SetRows(fmvRows)
+				}
+			case "c":
+				if m.vdSearch.FilterState() != list.Filtering {
+					x := m.fmvTable.SelectedRow()
+					m.Checkin(x)
+					fmvRows := updateFMVtable(m.registeredPilots)
+					m.fmvTable.SetRows(fmvRows)
+				}
 			}
 			switch m.focused {
 			case fmvTable:

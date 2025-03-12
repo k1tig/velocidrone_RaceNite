@@ -104,6 +104,34 @@ func (m Tui) vdToFMVracer() {
 	}
 }
 
+func (m Tui) Checkin(r table.Row) {
+	for index, i := range m.registeredPilots {
+		if r[0] == i.DiscordName {
+			switch i.Status {
+			case NulPilot.VdName:
+				if i.QualifyingTime != "CHECK IN Please!" {
+					i.Status = "Entered"
+				}
+			case "Entered":
+				i.Status = NulPilot.VdName
+			}
+			m.registeredPilots[index] = i
+		}
+	}
+}
+
+func (m Tui) CheckinAll(r table.Row) {
+
+	for index, i := range m.registeredPilots {
+		if r[0] == i.DiscordName {
+			if i.QualifyingTime != "CHECK IN Please!" {
+				i.Status = "Entered"
+			}
+		}
+		m.registeredPilots[index] = i
+	}
+}
+
 type testMsg struct{}
 
 /*func testCmd() tea.Msg {
