@@ -9,12 +9,12 @@ import (
 
 type csvProcessedMsg [][]Pilot
 
-func processForm(e *huh.Form) (d1, f1, v1, reg1 []Pilot) {
+func processForm(e *huh.Form) (vd, fmvBound []Pilot) {
 	discordTarget := GetDiscordId(e.GetString("discord"))
 	fmvTarget := GetFMVvoice(e.GetString("fmv"))
 	vdTarget := GetVdRacers(e.GetString("vd"))
 	registeredTarget := BindLists(vdTarget, fmvTarget, discordTarget)
-	return discordTarget, fmvTarget, vdTarget, registeredTarget
+	return vdTarget, registeredTarget
 
 }
 
@@ -36,7 +36,7 @@ func buildVelocidroneList(vdSheet []Pilot) list.Model {
 	return vdList
 }
 
-func buildFMVtable(boundList []Pilot) table.Model {
+func buildFMVtable() table.Model {
 	fmvColumns := []table.Column{
 		{Title: "Pilot", Width: 16},
 		{Title: "VD Name", Width: 16},
@@ -45,21 +45,6 @@ func buildFMVtable(boundList []Pilot) table.Model {
 	}
 
 	rows := []table.Row{}
-
-	for _, i := range boundList {
-		var s []string
-		var status string
-		name := i.DiscordName
-		vdName := i.VdName
-		qtime := i.QualifyingTime
-		if i.Status == NulPilot.Status {
-			status = "-"
-		} else {
-			status = i.Status
-		}
-		s = append(s, name, vdName, qtime, status)
-		rows = append(rows, s)
-	}
 
 	fmvTable := table.New(
 		table.WithColumns(fmvColumns),
@@ -79,6 +64,26 @@ func buildFMVtable(boundList []Pilot) table.Model {
 	fmvTable.SetStyles(s)
 
 	return fmvTable
+}
+
+func updateFMVtable(boundList []Pilot) []table.Row {
+	rows := []table.Row{}
+
+	for _, i := range boundList {
+		var s []string
+		var status string
+		name := i.DiscordName
+		vdName := i.VdName
+		qtime := i.QualifyingTime
+		if i.Status == NulPilot.Status {
+			status = "-"
+		} else {
+			status = i.Status
+		}
+		s = append(s, name, vdName, qtime, status)
+		rows = append(rows, s)
+	}
+	return rows
 }
 
 type testMsg struct{}

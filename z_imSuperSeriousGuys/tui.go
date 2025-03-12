@@ -35,8 +35,6 @@ const (
 type Tui struct {
 	state   viewState
 	focused focused
-	lg      *lipgloss.Renderer
-	styles  *Styles
 
 	list list.Model
 
@@ -46,18 +44,8 @@ type Tui struct {
 	fmvTable table.Model
 	vdSearch list.Model
 
-	fmvPilots, velocidronePilots, registeredPilots []Pilot
-	discordCheatSheet                              []Pilot
+	velocidronePilots, registeredPilots []Pilot
 }
-
-var (
-	baseStyle = lipgloss.NewStyle().
-			BorderStyle(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color("236"))
-
-	docStyle = lipgloss.NewStyle().Padding(7, 14, 0, 0) // for list
-
-)
 
 var (
 	titleStyle        = lipgloss.NewStyle().MarginLeft(2)
@@ -162,11 +150,13 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			cmds = append(cmds, cmd)
 		}
-	case csvProcessedMsg: //discord, fmv, vd, bound
+	case csvProcessedMsg: // vd, bound
 		lists := msg
-		m.registeredPilots = lists[3]
-		m.fmvTable = buildFMVtable(m.registeredPilots)
-		m.velocidronePilots = lists[2]
+		m.registeredPilots = lists[1]
+		m.fmvTable = buildFMVtable()
+		rows := updateFMVtable(m.registeredPilots)
+		m.fmvTable.SetRows(rows)
+		m.velocidronePilots = lists[0]
 		m.vdSearch = buildVelocidroneList(m.velocidronePilots)
 		m.state = createView
 		m.fmvTable, cmd = m.fmvTable.Update(msg)

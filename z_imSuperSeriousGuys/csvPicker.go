@@ -46,8 +46,8 @@ func (e csvForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if e.form.State == huh.StateCompleted {
 			f := e.form
-			discord, fmv, vd, bound := processForm(f)
-			msg, cmd := tui.Update(csvProcessedMsg{discord, fmv, vd, bound})
+			vd, fmvBound := processForm(f)
+			msg, cmd := tui.Update(csvProcessedMsg{vd, fmvBound})
 			return msg, cmd
 		}
 
