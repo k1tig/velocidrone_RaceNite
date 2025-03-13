@@ -68,26 +68,34 @@ func initForm() csvForm {
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewFilePicker().
-				Title("Velocidrone File").
+				Title("Velocidrone").
 				Description("CSV file for Veloidrone track").
 				AllowedTypes([]string{".csv"}).
+				CurrentDirectory("./csv").
+				ShowPermissions(false).
+				DirAllowed(false).
 				Key("vd"),
 
 			huh.NewFilePicker().
-				Title("FMV Voice File").
+				Title("FMV Voice").
 				Description("CSV of FMV voice with User and ID flags").
 				AllowedTypes([]string{".csv"}).
+				CurrentDirectory("./csv").
+				ShowPermissions(false).
 				Key("fmv"),
 
 			huh.NewFilePicker().
-				Title("Discord File").
+				Title("Discord Cheat-Sheet").
 				Description("CSV record of discord ID's and respective VD names").
 				AllowedTypes([]string{".csv"}).
+				CurrentDirectory("./csv").
+				ShowPermissions(false).
 				Key("discord"),
 		),
 	).WithWidth(65).
 		WithShowHelp(true).
 		WithShowErrors(false)
+
 	f := csvForm{form: form}
 	return f
 }

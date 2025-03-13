@@ -129,7 +129,6 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.list, cmd = m.list.Update(msg)
 			cmds = append(cmds, cmd)
-			return m, tea.Batch(cmds...)
 		case createView:
 			switch keypress := msg.String(); keypress {
 			case "tab":
@@ -151,7 +150,6 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 								break
 							}
 						}
-
 						if !pilotFlag {
 							for _, i := range m.velocidronePilots {
 								if i.VdName == listItem {
@@ -200,10 +198,11 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch m.focused {
 			case fmvTable:
 				m.fmvTable, cmd = m.fmvTable.Update(msg)
+				cmds = append(cmds, cmd)
 			case vdList:
-				m.vdSearch, cmd = m.vdSearch.Update(msg)
+				//m.vdSearch, cmd = m.vdSearch.Update(msg)  <~~~~~ this breaks search function for VDlist
+				//cmds = append(cmds, cmd)
 			}
-			cmds = append(cmds, cmd)
 		}
 	case csvProcessedMsg: // vd, bound
 		lists := msg
@@ -220,6 +219,11 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	case testMsg:
 		m.state = testView
+	}
+
+	if m.focused == vdList {
+		m.vdSearch, cmd = m.vdSearch.Update(msg)
+		cmds = append(cmds, cmd)
 	}
 	return m, tea.Batch(cmds...)
 
