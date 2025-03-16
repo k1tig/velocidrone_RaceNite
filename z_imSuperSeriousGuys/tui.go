@@ -30,6 +30,7 @@ const (
 const (
 	fmvTable focused = iota
 	vdList
+	raceTable
 )
 
 type Tui struct {
@@ -41,8 +42,9 @@ type Tui struct {
 	//Components for assembling the Race Roster
 	createForm csvForm
 	//colorGroups []table.Model
-	fmvTable table.Model
-	vdSearch list.Model
+	fmvTable  table.Model
+	vdSearch  list.Model
+	raceTable table.Model
 
 	velocidronePilots, registeredPilots []Pilot
 }
@@ -194,6 +196,13 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.fmvTable.SetRows(fmvRows)
 					}
 				}
+			case "M", "m":
+				m.raceTable = buildRaceTable()
+				rows := updateRaceTable(m.registeredPilots)
+				m.raceTable.SetRows(rows)
+				m.state = modView
+				m.focused = raceTable
+				m.raceTable.Focus()
 			}
 			switch m.focused {
 			case fmvTable:
@@ -202,6 +211,13 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case vdList:
 				//m.vdSearch, cmd = m.vdSearch.Update(msg)  <~~~~~ this breaks search function for VDlist
 				//cmds = append(cmds, cmd)
+
+			}
+		case modView:
+			switch m.focused {
+			case raceTable:
+				m.raceTable, cmd = m.raceTable.Update(msg)
+				cmds = append(cmds, cmd)
 			}
 		}
 	case csvProcessedMsg: // vd, bound
@@ -256,7 +272,17 @@ func (m Tui) View() string {
 
 		case testView:
 			return "Test View"
+		case modView:
+
+			headerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("207")).Padding(2, 0)
+			header := headerStyle.Render("FMV RaceNite Rawster")
+			padding := lipgloss.NewStyle().Padding(1, 6)
+
+			body := padding.Render(m.raceTable.View())
+			view := lipgloss.JoinVertical(lipgloss.Center, header, body)
+			return view
 		}
+
 	}
 	return "\n" + m.list.View()
 }

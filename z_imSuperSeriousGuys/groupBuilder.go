@@ -105,6 +105,7 @@ func RaceArray(vdList [][]string) [][][]string {
 }
 
 func BindLists(velocidroneList, fmvList, discordCheatSheet []Pilot) []Pilot {
+	var NulPilot Pilot
 	//discordCheatSheet is the DIY list a group can keep of discord usr IDs and VD names in CSV
 	//might break this with the index usage
 	for fmvIndex, fmvPilot := range fmvList {
