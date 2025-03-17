@@ -304,6 +304,7 @@ func groupsArray(vdList [][]string) [][][]string {
 
 func (m Tui) makeColorTables(brackets [][][]string) (tableList []table.Model) {
 	indexLen := len(brackets)
+	colors := []string{"171", "123", "220", "47", "9"}
 
 	for i := 0; i < indexLen; i++ {
 		columns := []table.Column{
@@ -315,7 +316,7 @@ func (m Tui) makeColorTables(brackets [][][]string) (tableList []table.Model) {
 		groupTable := table.New(
 			table.WithColumns(columns),
 			table.WithRows(rows),
-			table.WithFocused(true),
+			table.WithFocused(false),
 			table.WithHeight(14),
 		)
 		s := table.DefaultStyles()
@@ -326,7 +327,11 @@ func (m Tui) makeColorTables(brackets [][][]string) (tableList []table.Model) {
 			BorderBottom(true).
 			Bold(false)
 		s.Selected = s.Selected.
-			Background(lipgloss.Color("128"))
+			Background(nil).Bold(false)
+
+		s.Cell = s.Cell.
+			Foreground(lipgloss.Color(colors[i]))
+			//Foreground(lipgloss.Color("128"))
 
 		groupTable.SetStyles(s)
 		tableList = append(tableList, groupTable)

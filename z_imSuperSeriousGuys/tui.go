@@ -217,10 +217,10 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.colorTables[i].SetRows(rows)
 					}
 				}
-
-				for i := 0; i < indexLen-1; i++ {
-					m.colorTables[i].Blur()
-				}
+				/*
+					for i := 0; i < indexLen-1; i++ {
+						m.colorTables[i].Blur()
+					}*/
 
 			}
 			switch m.focused {
