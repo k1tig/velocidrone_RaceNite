@@ -37,14 +37,16 @@ type Tui struct {
 	state   viewState
 	focused focused
 
-	list list.Model
+	createForm csvForm
+
+	list     list.Model
+	vdSearch list.Model
 
 	//Components for assembling the Race Roster
-	createForm csvForm
 	//colorGroups []table.Model
-	fmvTable  table.Model
-	vdSearch  list.Model
-	raceTable table.Model
+	fmvTable    table.Model
+	raceTable   table.Model
+	colorTables []table.Model // I know...
 
 	velocidronePilots, registeredPilots []Pilot
 }
@@ -203,6 +205,23 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.state = modView
 				m.focused = raceTable
 				m.raceTable.Focus()
+
+				sortedRacers := makeSortedRaceList(m.registeredPilots)
+				groups := groupsArray(sortedRacers)
+				m.colorTables = m.makeColorTables(groups)
+				indexLen := len(groups)
+				for i := 0; i < indexLen; i++ {
+					rows := []table.Row{}
+					for _, x := range groups[i] {
+						rows = append(rows, x)
+						m.colorTables[i].SetRows(rows)
+					}
+				}
+				for i := 1; i < 5; i++ {
+					m.colorTables[i].Blur()
+
+				}
+
 			}
 			switch m.focused {
 			case fmvTable:
@@ -280,7 +299,15 @@ func (m Tui) View() string {
 
 			body := padding.Render(m.raceTable.View())
 			view := lipgloss.JoinVertical(lipgloss.Center, header, body)
-			return view
+			var groupTables []string
+			for _, i := range m.colorTables {
+				view := i.View()
+				groupTables = append(groupTables, view)
+
+			}
+			tables := lipgloss.JoinHorizontal(lipgloss.Center, groupTables...)
+			everything := lipgloss.JoinVertical(lipgloss.Center, view, tables)
+			return everything
 		}
 
 	}

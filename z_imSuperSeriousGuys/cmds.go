@@ -1,6 +1,7 @@
 package main
 
 import (
+	"sort"
 	"strconv"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -143,6 +144,7 @@ type testMsg struct{}
 func buildRaceTable() table.Model {
 	fmvColumns := []table.Column{
 		{Title: "Pilot", Width: 16},
+		{Title: "Points", Width: 7},
 		{Title: "Qualify Time", Width: 12},
 		{Title: "H1", Width: 8},
 		{Title: "H2", Width: 8},
@@ -160,7 +162,7 @@ func buildRaceTable() table.Model {
 		table.WithColumns(fmvColumns),
 		table.WithRows(rows),
 		table.WithFocused(true),
-		table.WithHeight(20),
+		table.WithHeight(16),
 	)
 	s := table.DefaultStyles()
 	s.Header = s.Header.
@@ -183,11 +185,12 @@ func updateRaceTable(racers []Pilot) []table.Row {
 	for _, i := range racers {
 		if i.Status {
 			var s []string
+			var fakePoints string
 			vdName := i.VdName
+			fakePoints = "0"
 			qTime := i.QualifyingTime
 			rt := floatListToStringList(i.RaceTimes)
-
-			s = append(s, vdName, qTime)
+			s = append(s, vdName, fakePoints, qTime)
 			s = append(s, rt...)
 			rows = append(rows, s)
 		}
@@ -198,7 +201,135 @@ func updateRaceTable(racers []Pilot) []table.Row {
 func floatListToStringList(floatList [10]float64) []string {
 	stringList := make([]string, len(floatList))
 	for i, num := range floatList {
+		if num == 0 {
+
+		}
 		stringList[i] = strconv.FormatFloat(num, 'f', 3, 64)
 	}
+	for i, str := range stringList {
+		if str == "0.000" {
+			stringList[i] = "-"
+		}
+
+	}
 	return stringList
+}
+func makeSortedRaceList(pilotList []Pilot) [][]string {
+	type cleanRacer struct {
+		racer  string
+		time   float64
+		points float64
+	}
+
+	var cleanRacers []cleanRacer
+	var racers []Pilot
+
+	for _, pilot := range pilotList {
+		if pilot.Status {
+			racers = append(racers, pilot)
+		}
+	}
+
+	for _, pilot := range racers {
+		var cr cleanRacer
+		cr.racer = pilot.VdName
+		cr.points = pilot.Points
+		QualifyingTime, _ := strconv.ParseFloat(pilot.QualifyingTime, 64)
+		cr.time = QualifyingTime
+
+		cleanRacers = append(cleanRacers, cr)
+	}
+
+	sort.Slice(cleanRacers, func(i, j int) bool {
+		return cleanRacers[i].time < cleanRacers[j].time
+	})
+
+	var racingList [][]string
+	for _, i := range cleanRacers {
+		var racestring []string
+		racestring = append(racestring, i.racer)
+		raceTime := strconv.FormatFloat(i.time, 'g', 3, 64)
+		points := strconv.FormatFloat(i.points, 'g', 3, 64)
+
+		racestring = append(racestring, raceTime)
+		racestring = append(racestring, points)
+		racingList = append(racingList, racestring)
+	}
+	return racingList
+}
+
+func groupsArray(vdList [][]string) [][][]string {
+	//makes a group of groups with the total amount of racers not exceeding a +1 differential
+	var maxGroupsize = 8
+	var grouplength int
+	var totalGroups int
+	var modulus int
+
+	racers := len(vdList)
+	if racers > 40 {
+		maxGroupsize = 10
+	}
+
+	for i := 1; i <= maxGroupsize; i++ {
+		if racers/i <= maxGroupsize {
+			totalGroups = i
+			modulus = racers % i
+			if modulus == 0 {
+				grouplength = racers / i
+			} else {
+				grouplength = (racers - modulus) / i
+			}
+			break
+		}
+	}
+
+	var groupStructure = make([][][]string, totalGroups)
+	var c int
+	x := modulus
+
+	for i := 1; i <= totalGroups; i++ {
+		if x > 0 { // distribues the modulus between the lower teir groups
+			racers := vdList[c : i*(grouplength+1)]
+			groupStructure[i-1] = racers
+			x--
+			c += grouplength + 1
+		} else { // groups that don't take a modulus
+			racers := vdList[c : c+grouplength]
+			groupStructure[i-1] = racers
+			c += grouplength
+		}
+	}
+	return groupStructure
+}
+
+func (m Tui) makeColorTables(brackets [][][]string) (tableList []table.Model) {
+	indexLen := len(brackets)
+
+	for i := 0; i < indexLen; i++ {
+		columns := []table.Column{
+			{Title: "Pilot", Width: 16},
+			{Title: "Time", Width: 7},
+			{Title: "Points", Width: 7},
+		}
+		rows := []table.Row{}
+		groupTable := table.New(
+			table.WithColumns(columns),
+			table.WithRows(rows),
+			table.WithFocused(true),
+			table.WithHeight(14),
+		)
+		s := table.DefaultStyles()
+		s.Header = s.Header.
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("ffb3fd")).
+			Foreground(lipgloss.Color("239")).
+			BorderBottom(true).
+			Bold(false)
+		s.Selected = s.Selected.
+			Background(lipgloss.Color("128"))
+
+		groupTable.SetStyles(s)
+		tableList = append(tableList, groupTable)
+	}
+	return tableList
 }

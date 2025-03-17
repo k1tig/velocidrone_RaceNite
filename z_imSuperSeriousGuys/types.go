@@ -28,7 +28,8 @@ type Pilot struct {
 	QualifyingTime string      `csv:"Lap Time" json:"qualifytime"`
 	ModelName      string      `csv:"Model Name" json:"modelname"`
 	Id             string      `csv:"ID" json:"id"`
-	Status         bool        //used for checkin placeholder
+	Status         bool        `json:"status"` //used for checkin placeholder
+	Points         float64     `json:"points"`
 	RaceTimes      [10]float64 `json:"racetimes"`
 }
 
