@@ -292,21 +292,25 @@ func (m Tui) View() string {
 		case testView:
 			return "Test View"
 		case modView:
-
-			headerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("207")).Padding(2, 0)
+			colorNames := []string{"Gold", "Magenta", "Cyan", "Orange", "Green"}
+			headerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("207")).Padding(1, 0)
+			header2Style := lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Padding(1, 0).Underline(true)
 			header := headerStyle.Render("FMV RaceNite Rawster")
 			padding := lipgloss.NewStyle().Padding(1, 6)
 
-			body := padding.Render(m.raceTable.View())
-			view := lipgloss.JoinVertical(lipgloss.Center, header, body)
+			rt := padding.Render(m.raceTable.View())
+			raceTable := lipgloss.JoinVertical(lipgloss.Center, header, rt)
 			var groupTables []string
-			for _, i := range m.colorTables {
-				view := i.View()
-				groupTables = append(groupTables, view)
+			for index, i := range m.colorTables {
+				item := i.View()
+				header := header2Style.Render(colorNames[index])
+				table := lipgloss.JoinVertical(lipgloss.Center, header, item)
+				groupTables = append(groupTables, table)
 
 			}
+
 			tables := lipgloss.JoinHorizontal(lipgloss.Center, groupTables...)
-			everything := lipgloss.JoinVertical(lipgloss.Center, view, tables)
+			everything := lipgloss.JoinVertical(lipgloss.Center, raceTable, tables)
 			return everything
 		}
 

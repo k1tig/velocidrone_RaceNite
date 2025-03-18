@@ -179,10 +179,18 @@ func buildRaceTable() table.Model {
 	return raceTable
 }
 
-func updateRaceTable(racers []Pilot) []table.Row {
+func updateRaceTable(pilots []Pilot) []table.Row {
 	rows := []table.Row{}
 
-	for _, i := range racers {
+	//Maybe this will work?
+	sort.Slice(pilots, func(i, j int) bool {
+		var a, b float64
+		a, _ = strconv.ParseFloat(pilots[i].QualifyingTime, 64)
+		b, _ = strconv.ParseFloat(pilots[j].QualifyingTime, 64)
+		return a < b
+	})
+
+	for _, i := range pilots {
 		if i.Status {
 			var s []string
 			var fakePoints string
@@ -195,6 +203,7 @@ func updateRaceTable(racers []Pilot) []table.Row {
 			rows = append(rows, s)
 		}
 	}
+
 	return rows
 
 }
@@ -304,7 +313,7 @@ func groupsArray(vdList [][]string) [][][]string {
 
 func (m Tui) makeColorTables(brackets [][][]string) (tableList []table.Model) {
 	indexLen := len(brackets)
-	colors := []string{"171", "123", "220", "47", "9"}
+	colors := []string{"190", "171", "123", "214", "47"}
 
 	for i := 0; i < indexLen; i++ {
 		columns := []table.Column{
