@@ -198,25 +198,36 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.fmvTable.SetRows(fmvRows)
 					}
 				}
-			case "M", "m":
-				m.raceTable = buildRaceTable()
-				rows := updateRaceTable(m.registeredPilots)
-				m.raceTable.SetRows(rows)
-				m.state = modView
-				m.focused = raceTable
-				m.raceTable.Focus()
+			case "M", "m": // add error messege to view if too many pilots try to get pushed
+				var counter = 0
 
-				sortedRacers := makeSortedRaceList(m.registeredPilots)
-				groups := groupsArray(sortedRacers)
-				m.colorTables = m.makeColorTables(groups)
-				indexLen := len(groups)
-				for i := 0; i < indexLen; i++ {
-					rows := []table.Row{}
-					for _, x := range groups[i] {
-						rows = append(rows, x)
-						m.colorTables[i].SetRows(rows)
+				for _, pilot := range m.registeredPilots {
+					if pilot.Status == true {
+						counter++
 					}
 				}
+
+				if counter < 51 {
+					m.raceTable = buildRaceTable()
+					rows := updateRaceTable(m.registeredPilots)
+					m.raceTable.SetRows(rows)
+					m.state = modView
+					m.focused = raceTable
+					m.raceTable.Focus()
+
+					sortedRacers := makeSortedRaceList(m.registeredPilots)
+					groups := groupsArray(sortedRacers)
+					m.colorTables = m.makeColorTables(groups)
+					indexLen := len(groups)
+					for i := 0; i < indexLen; i++ {
+						rows := []table.Row{}
+						for _, x := range groups[i] {
+							rows = append(rows, x)
+							m.colorTables[i].SetRows(rows)
+						}
+					}
+				}
+
 				/*
 					for i := 0; i < indexLen-1; i++ {
 						m.colorTables[i].Blur()
