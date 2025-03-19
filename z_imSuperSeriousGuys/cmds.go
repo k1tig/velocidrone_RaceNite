@@ -269,24 +269,24 @@ func makeSortedRaceList(pilotList []Pilot) [][]string {
 
 func groupsArray(vdList [][]string) [][][]string {
 	//makes a group of groups with the total amount of racers not exceeding a +1 differential
-	var maxGroupsize = 8.0
-	var grouplength float64
-	var totalGroups float64
+	var maxGroupsize = 8
+	var grouplength int
+	var totalGroups int
 	var modulus int
-	var racers = float64(len(vdList))
+	var racers = (len(vdList))
 
 	if racers > 40 {
 		maxGroupsize = 10
 	}
 
-	for i := 1.0; i <= maxGroupsize; i++ {
-		if racers/i <= maxGroupsize { //  42_1_2_3_4_5....oh its a float rounding issue...moron. note:fixed*
+	for i := 1; i <= maxGroupsize; i++ {
+		if float64(racers)/float64(i) <= float64(maxGroupsize) { //  42_1_2_3_4_5....oh its a float rounding issue...moron. note:fixed*
 			totalGroups = i
 			modulus = int(racers) % int(i)
 			if modulus == 0 {
 				grouplength = racers / i
 			} else {
-				grouplength = (racers - float64(modulus)) / i
+				grouplength = (racers - modulus) / i
 			}
 			break
 		}
@@ -296,7 +296,7 @@ func groupsArray(vdList [][]string) [][][]string {
 	var c int
 	x := modulus
 
-	for i := 1.0; i <= totalGroups; i++ {
+	for i := 1; i <= totalGroups; i++ {
 
 		if x > 0 { // distribues the modulus between the lower teir groups
 			racers := vdList[c : int(i)*(int(grouplength)+1)]
