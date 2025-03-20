@@ -297,8 +297,8 @@ func (m Tui) View() string {
 			body := lipgloss.JoinHorizontal(lipgloss.Top, vdList, fmvBody, fmvTag)
 
 			view := lipgloss.JoinVertical(lipgloss.Left, body, listpadding.Render(helpText))
-			footer := m.help.View(m.fmvKeys)
-			return lipgloss.JoinVertical(lipgloss.Center, view, footer)
+			//footer := m.help.View(m.fmvKeys)
+			return view
 
 		case testView:
 			return "Test View"
