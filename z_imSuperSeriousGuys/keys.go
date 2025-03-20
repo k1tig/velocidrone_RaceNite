@@ -13,8 +13,10 @@ func (k fmvTableKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.checkin, k.checkinAll, k.remove, k.switchToVd}
 }
 
-func (k fmvTableKeyMap) FullHelp() []key.Binding {
-	return []key.Binding{k.checkin, k.checkinAll, k.remove, k.switchToVd}
+func (k fmvTableKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.checkin, k.checkinAll, k.remove, k.switchToVd},
+	}
 }
 
 var theFmvKeys = fmvTableKeyMap{
@@ -46,8 +48,8 @@ func (k vdSearchKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.addToFmv, k.updateAtFmv, k.switchToFmV}
 }
 
-func (k vdSearchKeyMap) FullHelp() []key.Binding {
-	return []key.Binding{k.addToFmv, k.updateAtFmv, k.switchToFmV}
+func (k vdSearchKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{{k.addToFmv, k.updateAtFmv, k.switchToFmV}}
 }
 
 var theVdSearchKeys = vdSearchKeyMap{

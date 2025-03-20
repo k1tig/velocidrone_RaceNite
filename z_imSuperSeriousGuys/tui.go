@@ -8,6 +8,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/table"
@@ -37,6 +38,7 @@ const (
 type Tui struct {
 	state   viewState
 	focused focused
+	help    help.Model
 
 	createForm csvForm
 
@@ -101,7 +103,7 @@ func NewTui() *Tui {
 	l.Styles.PaginationStyle = paginationStyle
 	l.Styles.HelpStyle = helpStyle
 
-	return &Tui{list: l, state: mainView, fmvKeys: theFmvKeys, vdSearchKeys: theVdSearchKeys}
+	return &Tui{list: l, state: mainView, fmvKeys: theFmvKeys, vdSearchKeys: theVdSearchKeys, help: help.New()}
 }
 
 func (m Tui) Init() tea.Cmd {
@@ -293,8 +295,10 @@ func (m Tui) View() string {
 
 			vdList := listpadding.Render(m.vdSearch.View())
 			body := lipgloss.JoinHorizontal(lipgloss.Top, vdList, fmvBody, fmvTag)
+
 			view := lipgloss.JoinVertical(lipgloss.Left, body, listpadding.Render(helpText))
-			return view
+			footer := m.help.View(m.fmvKeys)
+			return lipgloss.JoinVertical(lipgloss.Center, view, footer)
 
 		case testView:
 			return "Test View"
@@ -322,5 +326,7 @@ func (m Tui) View() string {
 		}
 
 	}
-	return "\n" + m.list.View()
+
+	body := m.list.View()
+	return body
 }
