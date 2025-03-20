@@ -6,14 +6,15 @@ type fmvTableKeyMap struct {
 	checkin    key.Binding
 	checkinAll key.Binding
 	remove     key.Binding
+	switchToVd key.Binding
 }
 
 func (k fmvTableKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.checkin, k.checkinAll, k.remove}
+	return []key.Binding{k.checkin, k.checkinAll, k.remove, k.switchToVd}
 }
 
 func (k fmvTableKeyMap) FullHelp() []key.Binding {
-	return []key.Binding{k.checkin, k.checkinAll, k.remove}
+	return []key.Binding{k.checkin, k.checkinAll, k.remove, k.switchToVd}
 }
 
 var theFmvKeys = fmvTableKeyMap{
@@ -28,5 +29,38 @@ var theFmvKeys = fmvTableKeyMap{
 	remove: key.NewBinding(
 		key.WithKeys("R"),
 		key.WithHelp("R", "Delete Pilot"),
+	),
+	switchToVd: key.NewBinding(
+		key.WithKeys("tab"),
+		key.WithHelp("Tab", "Vecocidrone List"),
+	),
+}
+
+type vdSearchKeyMap struct {
+	addToFmv    key.Binding
+	updateAtFmv key.Binding
+	switchToFmV key.Binding
+}
+
+func (k vdSearchKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.addToFmv, k.updateAtFmv, k.switchToFmV}
+}
+
+func (k vdSearchKeyMap) FullHelp() []key.Binding {
+	return []key.Binding{k.addToFmv, k.updateAtFmv, k.switchToFmV}
+}
+
+var theVdSearchKeys = vdSearchKeyMap{
+	addToFmv: key.NewBinding(
+		key.WithKeys("A", "a"),
+		key.WithHelp("a/A", "Add to FMV list"),
+	),
+	updateAtFmv: key.NewBinding(
+		key.WithKeys("U"),
+		key.WithHelp("U", "Checkin-all"),
+	),
+	switchToFmV: key.NewBinding(
+		key.WithKeys("tab"),
+		key.WithHelp("Tab", "Swith to FMV table"),
 	),
 }
