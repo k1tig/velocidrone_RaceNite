@@ -8,6 +8,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -45,6 +46,7 @@ type Tui struct {
 	//Components for assembling the Race Roster
 	//colorGroups []table.Model
 	fmvTable    table.Model
+	fmvKeys     fmvTableKeyMap
 	raceTable   table.Model
 	colorTables []table.Model // I know...
 
@@ -98,7 +100,7 @@ func NewTui() *Tui {
 	l.Styles.PaginationStyle = paginationStyle
 	l.Styles.HelpStyle = helpStyle
 
-	return &Tui{list: l, state: mainView}
+	return &Tui{list: l, state: mainView, fmvKeys: theFmvKeys}
 }
 
 func (m Tui) Init() tea.Cmd {
@@ -134,6 +136,29 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list, cmd = m.list.Update(msg)
 			cmds = append(cmds, cmd)
 		case createView:
+			switch {
+			case key.Matches(msg, m.fmvKeys.checkin):
+				if m.focused == fmvTable {
+					if m.vdSearch.FilterState() != list.Filtering {
+						x := m.fmvTable.SelectedRow()
+						m.Checkin(x)
+						fmvRows := updateFMVtable(m.registeredPilots)
+						m.fmvTable.SetRows(fmvRows)
+					}
+				}
+			case key.Matches(msg, m.fmvKeys.checkinAll):
+				if m.focused == fmvTable {
+					if m.vdSearch.FilterState() != list.Filtering {
+						for _, i := range m.registeredPilots {
+							x := table.Row{i.DiscordName}
+							m.CheckinAll(x)
+						}
+						fmvRows := updateFMVtable(m.registeredPilots)
+						m.fmvTable.SetRows(fmvRows)
+					}
+				}
+
+			}
 			switch keypress := msg.String(); keypress {
 			case "tab":
 				if m.focused == fmvTable {
@@ -178,31 +203,11 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.fmvTable.SetRows(fmvRows)
 					}
 				}
-			case "C":
-				if m.focused == fmvTable {
-					if m.vdSearch.FilterState() != list.Filtering {
-						for _, i := range m.registeredPilots {
-							x := table.Row{i.DiscordName}
-							m.CheckinAll(x)
-						}
-						fmvRows := updateFMVtable(m.registeredPilots)
-						m.fmvTable.SetRows(fmvRows)
-					}
-				}
-			case "c":
-				if m.focused == fmvTable {
-					if m.vdSearch.FilterState() != list.Filtering {
-						x := m.fmvTable.SelectedRow()
-						m.Checkin(x)
-						fmvRows := updateFMVtable(m.registeredPilots)
-						m.fmvTable.SetRows(fmvRows)
-					}
-				}
 			case "M", "m": // add error messege to view if too many pilots try to get pushed
 				var counter = 0
 
 				for _, pilot := range m.registeredPilots {
-					if pilot.Status == true {
+					if pilot.Status {
 						counter++
 					}
 				}
@@ -227,13 +232,8 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}
 					}
 				}
-
-				/*
-					for i := 0; i < indexLen-1; i++ {
-						m.colorTables[i].Blur()
-					}*/
-
 			}
+
 			switch m.focused {
 			case fmvTable:
 				m.fmvTable, cmd = m.fmvTable.Update(msg)
