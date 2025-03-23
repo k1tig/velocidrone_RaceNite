@@ -55,7 +55,7 @@ func (k vdSearchKeyMap) FullHelp() [][]key.Binding {
 var theVdSearchKeys = vdSearchKeyMap{
 	addToFmv: key.NewBinding(
 		key.WithKeys("A", "a"),
-		key.WithHelp("a/A", "Add to FMV list"),
+		key.WithHelp("A/a", "Add to FMV list"),
 	),
 	updateAtFmv: key.NewBinding(
 		key.WithKeys("U"),

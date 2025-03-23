@@ -23,14 +23,19 @@ func processForm(e *huh.Form) (vd, fmvBound []Pilot) {
 
 func buildVelocidroneList(vdSheet []Pilot) list.Model {
 	var racers = []list.Item{}
-	vdList := list.New(racers, list.NewDefaultDelegate(), 0, 0)
+	d := list.NewDefaultDelegate()
+	d.Styles.SelectedTitle = d.Styles.SelectedTitle.Foreground(lipgloss.Color("242"))
+	d.Styles.SelectedDesc = d.Styles.SelectedTitle
+	vdList := list.New(racers, d, 0, 0)
 	vdList.Title = "Velocidrone Sheet"
 	vdList.Styles.Title = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("178")).
 		Background(lipgloss.Color("0")).
 		Bold(true).
 		Underline(true)
+
 	vdList.SetSize(28, 20)
+
 	for _, racer := range vdSheet {
 		obj := listRacer{name: racer.VdName, time: racer.QualifyingTime, craft: racer.ModelName}
 		//items = append(items, obj)
@@ -63,7 +68,9 @@ func buildFMVtable() table.Model {
 		BorderBottom(true).
 		Bold(false)
 	s.Selected = s.Selected.
-		Background(lipgloss.Color("128"))
+		Background(lipgloss.Color("128")).
+		Foreground(lipgloss.Color("207"))
+
 	fmvTable.SetStyles(s)
 
 	return fmvTable

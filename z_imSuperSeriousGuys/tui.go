@@ -234,9 +234,20 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			switch m.focused {
 			case fmvTable:
+				fmvstyle := fmvTableSelectedStyle("128", "207")
+				m.fmvTable.SetStyles(fmvstyle)
 				m.fmvTable, cmd = m.fmvTable.Update(msg)
 				cmds = append(cmds, cmd)
+				vdstyle := vdSearchSelectedStyle("242")
+				m.vdSearch.SetDelegate(vdstyle)
+
+				cmds = append(cmds, cmd)
+
 			case vdList:
+				style := fmvTableSelectedStyle("242", "249")
+				m.fmvTable.SetStyles(style)
+				vdstyle := vdSearchSelectedStyle("#EE6FF8")
+				m.vdSearch.SetDelegate(vdstyle)
 				//m.vdSearch, cmd = m.vdSearch.Update(msg)  <~~~~~ this breaks search function for VDlist
 				//cmds = append(cmds, cmd)
 
@@ -278,11 +289,7 @@ func (m Tui) View() string {
 	if m.state != mainView {
 		switch m.state {
 		case createView:
-
-			switch m.focused {
-			case vdList:
-				helpText = "~HELP KEYS~\nTab: focus table, A/a: add to fmv, E/e: assign vd item to FMV racer"
-			}
+			var footer string
 
 			header := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
 			padding := lipgloss.NewStyle().Padding(0, 2)
@@ -290,14 +297,21 @@ func (m Tui) View() string {
 			num := "placeholder num"
 
 			fmvtitle := header.Render(fmt.Sprintf("\n\n FMV Voice Checkin (count:%s)\n", num))
-			fmvTable := m.fmvTable.View()
-			fmvBody := padding.Render(lipgloss.JoinVertical(lipgloss.Center, fmvtitle, fmvTable))
+			fmvtableView := m.fmvTable.View()
+			fmvBody := padding.Render(lipgloss.JoinVertical(lipgloss.Center, fmvtitle, fmvtableView))
 
-			vdList := listpadding.Render(m.vdSearch.View())
-			body := lipgloss.JoinHorizontal(lipgloss.Top, vdList, fmvBody, fmvTag)
+			vdSearch := listpadding.Render(m.vdSearch.View())
+			body := lipgloss.JoinHorizontal(lipgloss.Top, vdSearch, fmvBody, fmvTag)
 
-			view := lipgloss.JoinVertical(lipgloss.Left, body, listpadding.Render(helpText))
-			//footer := m.help.View(m.fmvKeys)
+			switch m.focused {
+			case vdList:
+				footer = m.help.View(m.vdSearchKeys)
+
+			case fmvTable:
+				footer = m.help.View(m.fmvKeys)
+			}
+
+			view := lipgloss.JoinVertical(lipgloss.Left, body, listpadding.Render(helpText), footer)
 			return view
 
 		case testView:
