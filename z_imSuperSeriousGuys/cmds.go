@@ -31,10 +31,10 @@ func buildVelocidroneList(vdSheet []Pilot) list.Model {
 	vdList := list.New(racers, d, 0, 0)
 	vdList.Title = "Velocidrone Sheet"
 	vdList.Styles.Title = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("178")).
-		Background(lipgloss.Color("0")).
-		Bold(true).
-		Underline(true)
+		Foreground(lipgloss.Color("11")).
+		UnsetBackground()
+	//Bold(true).
+	//Underline(true)
 
 	vdList.SetSize(28, 20)
 

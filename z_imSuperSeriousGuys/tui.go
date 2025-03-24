@@ -285,23 +285,30 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Tui) View() string {
-	var helpText string
 	if m.state != mainView {
 		switch m.state {
 		case createView:
 			var footer string
+			var titleColor string = "11"
+			var checkedInPilots int
 
-			headerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
-			paddingStyle := lipgloss.NewStyle().Padding(0, 2)
-			listpaddingStyle := lipgloss.NewStyle().Padding(2, 6)
-			num := "placeholder num"
+			for _, i := range m.registeredPilots {
+				if i.Status {
+					checkedInPilots++
+				}
+			}
 
-			fmvtitle := headerStyle.Render(fmt.Sprintf("\n\n FMV Voice Checkin (count:%s)\n", num))
+			headerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(titleColor))
+			//paddingStyle := lipgloss.NewStyle().Padding(0, 2)
+
+			fmvtitle := headerStyle.Render(fmt.Sprintf("\n\n FMV Voice Checkin (Pilots:%v)\n", checkedInPilots))
 			fmvtableView := m.fmvTable.View()
-			fmvBody := paddingStyle.Render(lipgloss.JoinVertical(lipgloss.Center, fmvtitle, fmvtableView))
+			fmvBody := lipgloss.JoinVertical(lipgloss.Center, fmvtitle, fmvtableView)
 
-			vdSearch := listpaddingStyle.Render(m.vdSearch.View())
-			body := lipgloss.JoinHorizontal(lipgloss.Top, vdSearch, fmvBody, fmvTag)
+			fmvBodyPadding := lipgloss.NewStyle().Padding(0, 14)
+			vdSearchPadding := lipgloss.NewStyle().Padding(2, 0) //adjust the drop down
+			vdSearchView := vdSearchPadding.Render(m.vdSearch.View())
+			body := lipgloss.JoinHorizontal(lipgloss.Top, vdSearchView, fmvBodyPadding.Render(fmvBody), headerStyle.Render(fmvTag))
 
 			switch m.focused {
 			case vdList:
@@ -311,8 +318,10 @@ func (m Tui) View() string {
 				footer = m.help.View(m.fmvKeys)
 			}
 
-			view := lipgloss.JoinVertical(lipgloss.Left, body, listpaddingStyle.Render(helpText), footer)
-			return view
+			footerPadding := lipgloss.NewStyle().PaddingLeft(2)
+			viewPadding := lipgloss.NewStyle().PaddingLeft(6)
+			view := lipgloss.JoinVertical(lipgloss.Left, body, footerPadding.Render(footer))
+			return viewPadding.Render(view)
 
 		case testView:
 			return "Test View"

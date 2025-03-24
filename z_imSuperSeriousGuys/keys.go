@@ -10,7 +10,7 @@ type fmvTableKeyMap struct {
 }
 
 func (k fmvTableKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.checkin, k.checkinAll, k.remove, k.switchToVd}
+	return []key.Binding{k.checkinAll, k.checkin, k.remove, k.switchToVd}
 }
 
 func (k fmvTableKeyMap) FullHelp() [][]key.Binding {
@@ -20,13 +20,13 @@ func (k fmvTableKeyMap) FullHelp() [][]key.Binding {
 }
 
 var theFmvKeys = fmvTableKeyMap{
-	checkin: key.NewBinding(
-		key.WithKeys("c"),
-		key.WithHelp("c", "Checkin"),
-	),
 	checkinAll: key.NewBinding(
 		key.WithKeys("C"),
 		key.WithHelp("C", "Checkin-all"),
+	),
+	checkin: key.NewBinding(
+		key.WithKeys("c"),
+		key.WithHelp("c", "Checkin"),
 	),
 	remove: key.NewBinding(
 		key.WithKeys("R"),
