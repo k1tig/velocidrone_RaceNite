@@ -59,7 +59,7 @@ var theVdSearchKeys = vdSearchKeyMap{
 	),
 	updateAtFmv: key.NewBinding(
 		key.WithKeys("U"),
-		key.WithHelp("U", "Checkin-all"),
+		key.WithHelp("U", "Update FMV-Pilot"),
 	),
 	switchToFmV: key.NewBinding(
 		key.WithKeys("tab"),

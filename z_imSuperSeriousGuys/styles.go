@@ -23,7 +23,10 @@ func fmvTableSelectedStyle(bgColor, fgColor string) table.Styles {
 
 func vdSearchSelectedStyle(color string) list.DefaultDelegate {
 	s := list.NewDefaultDelegate()
-	s.Styles.SelectedTitle = s.Styles.SelectedTitle.Foreground(lipgloss.Color(color))
+	s.Styles.SelectedTitle = s.Styles.SelectedTitle.
+		Foreground(lipgloss.Color(color)).
+		BorderForeground(lipgloss.AdaptiveColor{Light: "#F793FF", Dark: color})
 	s.Styles.SelectedDesc = s.Styles.SelectedTitle
+
 	return s
 }

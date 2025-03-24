@@ -24,7 +24,9 @@ func processForm(e *huh.Form) (vd, fmvBound []Pilot) {
 func buildVelocidroneList(vdSheet []Pilot) list.Model {
 	var racers = []list.Item{}
 	d := list.NewDefaultDelegate()
-	d.Styles.SelectedTitle = d.Styles.SelectedTitle.Foreground(lipgloss.Color("242"))
+	d.Styles.SelectedTitle = d.Styles.SelectedTitle.
+		Foreground(lipgloss.Color("242")).
+		BorderForeground(lipgloss.AdaptiveColor{Light: "#F793FF", Dark: "242"})
 	d.Styles.SelectedDesc = d.Styles.SelectedTitle
 	vdList := list.New(racers, d, 0, 0)
 	vdList.Title = "Velocidrone Sheet"

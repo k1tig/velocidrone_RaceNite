@@ -291,16 +291,16 @@ func (m Tui) View() string {
 		case createView:
 			var footer string
 
-			header := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
-			padding := lipgloss.NewStyle().Padding(0, 2)
-			listpadding := lipgloss.NewStyle().Padding(2, 6)
+			headerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
+			paddingStyle := lipgloss.NewStyle().Padding(0, 2)
+			listpaddingStyle := lipgloss.NewStyle().Padding(2, 6)
 			num := "placeholder num"
 
-			fmvtitle := header.Render(fmt.Sprintf("\n\n FMV Voice Checkin (count:%s)\n", num))
+			fmvtitle := headerStyle.Render(fmt.Sprintf("\n\n FMV Voice Checkin (count:%s)\n", num))
 			fmvtableView := m.fmvTable.View()
-			fmvBody := padding.Render(lipgloss.JoinVertical(lipgloss.Center, fmvtitle, fmvtableView))
+			fmvBody := paddingStyle.Render(lipgloss.JoinVertical(lipgloss.Center, fmvtitle, fmvtableView))
 
-			vdSearch := listpadding.Render(m.vdSearch.View())
+			vdSearch := listpaddingStyle.Render(m.vdSearch.View())
 			body := lipgloss.JoinHorizontal(lipgloss.Top, vdSearch, fmvBody, fmvTag)
 
 			switch m.focused {
@@ -311,7 +311,7 @@ func (m Tui) View() string {
 				footer = m.help.View(m.fmvKeys)
 			}
 
-			view := lipgloss.JoinVertical(lipgloss.Left, body, listpadding.Render(helpText), footer)
+			view := lipgloss.JoinVertical(lipgloss.Left, body, listpaddingStyle.Render(helpText), footer)
 			return view
 
 		case testView:
