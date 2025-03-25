@@ -37,6 +37,14 @@ type listRacer struct {
 	name, time, craft string
 }
 
+type raceRecord struct {
+	Id         int     `json:"id"`
+	RoomPhrase string  `json:"roomphrase"`
+	Round      int     `json:"round"`
+	Turn       int     `json:"turn"`
+	Pilots     []Pilot `json:"pilots"`
+}
+
 // for list interface
 func (i listRacer) Title() string { return i.name }
 func (i listRacer) Description() string {

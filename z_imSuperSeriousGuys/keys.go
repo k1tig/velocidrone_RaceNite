@@ -10,12 +10,12 @@ type fmvTableKeyMap struct {
 }
 
 func (k fmvTableKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.checkinAll, k.checkin, k.remove, k.switchToVd}
+	return []key.Binding{k.switchToVd, k.checkinAll, k.checkin, k.remove}
 }
 
 func (k fmvTableKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.checkin, k.checkinAll, k.remove, k.switchToVd},
+		{k.switchToVd, k.checkinAll, k.checkin, k.remove},
 	}
 }
 
@@ -45,11 +45,11 @@ type vdSearchKeyMap struct {
 }
 
 func (k vdSearchKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.addToFmv, k.updateAtFmv, k.switchToFmV}
+	return []key.Binding{k.switchToFmV, k.addToFmv, k.updateAtFmv}
 }
 
 func (k vdSearchKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{{k.addToFmv, k.updateAtFmv, k.switchToFmV}}
+	return [][]key.Binding{{k.switchToFmV, k.addToFmv, k.updateAtFmv}}
 }
 
 var theVdSearchKeys = vdSearchKeyMap{

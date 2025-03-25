@@ -48,9 +48,11 @@ type Tui struct {
 
 	//Components for assembling the Race Roster
 	//colorGroups []table.Model
-	fmvTable    table.Model
-	fmvKeys     fmvTableKeyMap
-	raceTable   table.Model
+	fmvTable  table.Model
+	fmvKeys   fmvTableKeyMap
+	raceTable table.Model
+
+	raceRecord  raceRecord
 	colorTables []table.Model // I know...
 
 	velocidronePilots, registeredPilots []Pilot
@@ -210,9 +212,14 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						counter++
 					}
 				}
+
+				//////// LOGIC FOR SERVER PUT HERE ///////////
 				if counter < 51 {
+					m.raceRecord.Pilots = m.registeredPilots
+					m.raceRecord.Round = 1
+					m.raceRecord.Turn = 1
 					m.raceTable = buildRaceTable()
-					rows := updateRaceTable(m.registeredPilots)
+					rows := updateRaceTable(m.raceRecord.Pilots)
 					m.raceTable.SetRows(rows)
 					m.state = modView
 					m.focused = raceTable
