@@ -9,6 +9,24 @@ type fmvTableKeyMap struct {
 	switchToVd key.Binding
 }
 
+type vdSearchKeyMap struct {
+	addToFmv    key.Binding
+	updateAtFmv key.Binding
+	switchToFmV key.Binding
+}
+
+type raceTableKeyMap struct {
+	toMain key.Binding
+}
+
+func (k vdSearchKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.switchToFmV, k.addToFmv, k.updateAtFmv}
+}
+
+func (k vdSearchKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{{k.switchToFmV, k.addToFmv, k.updateAtFmv}}
+}
+
 func (k fmvTableKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.switchToVd, k.checkinAll, k.checkin, k.remove}
 }
@@ -17,6 +35,14 @@ func (k fmvTableKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.switchToVd, k.checkinAll, k.checkin, k.remove},
 	}
+}
+
+func (k raceTableKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.toMain}
+}
+
+func (k raceTableKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{{k.toMain}}
 }
 
 var theFmvKeys = fmvTableKeyMap{
@@ -38,20 +64,6 @@ var theFmvKeys = fmvTableKeyMap{
 	),
 }
 
-type vdSearchKeyMap struct {
-	addToFmv    key.Binding
-	updateAtFmv key.Binding
-	switchToFmV key.Binding
-}
-
-func (k vdSearchKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.switchToFmV, k.addToFmv, k.updateAtFmv}
-}
-
-func (k vdSearchKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{{k.switchToFmV, k.addToFmv, k.updateAtFmv}}
-}
-
 var theVdSearchKeys = vdSearchKeyMap{
 	addToFmv: key.NewBinding(
 		key.WithKeys("A", "a"),
@@ -64,5 +76,12 @@ var theVdSearchKeys = vdSearchKeyMap{
 	switchToFmV: key.NewBinding(
 		key.WithKeys("tab"),
 		key.WithHelp("Tab", "Swith to FMV table"),
+	),
+}
+
+var theRaceTableKeys = raceTableKeyMap{
+	toMain: key.NewBinding(
+		key.WithKeys("1"),
+		key.WithHelp("1", "Main"),
 	),
 }

@@ -31,6 +31,7 @@ const (
 
 const (
 	fmvTable focused = iota
+	clear
 	vdList
 	raceTable
 )
@@ -51,6 +52,7 @@ type Tui struct {
 	fmvTable  table.Model
 	fmvKeys   fmvTableKeyMap
 	raceTable table.Model
+	raceKeys  raceTableKeyMap
 
 	raceRecord  raceRecord
 	colorTables []table.Model // I know...
@@ -105,7 +107,7 @@ func NewTui() *Tui {
 	l.Styles.PaginationStyle = paginationStyle
 	l.Styles.HelpStyle = helpStyle
 
-	return &Tui{list: l, state: mainView, fmvKeys: theFmvKeys, vdSearchKeys: theVdSearchKeys, help: help.New()}
+	return &Tui{list: l, state: mainView, fmvKeys: theFmvKeys, vdSearchKeys: theVdSearchKeys, raceKeys: theRaceTableKeys, help: help.New()}
 }
 
 func (m Tui) Init() tea.Cmd {
@@ -260,11 +262,19 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			}
 		case modView:
+			switch {
+			case key.Matches(msg, m.raceKeys.toMain):
+				m.state = mainView
+				m.focused = clear
+				m.list, cmd = m.list.Update(msg)
+				return m, cmd
+			}
 			switch m.focused {
 			case raceTable:
 				m.raceTable, cmd = m.raceTable.Update(msg)
 				cmds = append(cmds, cmd)
 			}
+
 		}
 	case csvProcessedMsg: // vd, bound
 		lists := msg
@@ -335,12 +345,13 @@ func (m Tui) View() string {
 		case modView:
 			colorNames := []string{"Gold", "Magenta", "Cyan", "Orange", "Green"}
 			headerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("207")).Padding(1, 0)
-			header2Style := lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Padding(1, 0).Underline(true)
+			header2Style := lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Padding(1, 0, 0, 0).Underline(true)
 			header := headerStyle.Render("FMV RaceNite Rawster")
-			padding := lipgloss.NewStyle().Padding(1, 6)
+			bodyPadding := lipgloss.NewStyle().Padding(0, 2)
+			rtPadding := lipgloss.NewStyle().Padding(2, 0, 0, 0)
 
-			rt := padding.Render(m.raceTable.View())
-			raceTable := lipgloss.JoinVertical(lipgloss.Center, header, rt)
+			rt := m.raceTable.View()
+			raceTable := rtPadding.Render(lipgloss.JoinVertical(lipgloss.Center, header, rt))
 			var groupTables []string
 			for index, i := range m.colorTables {
 				item := i.View()
@@ -351,7 +362,8 @@ func (m Tui) View() string {
 			}
 
 			tables := lipgloss.JoinHorizontal(lipgloss.Center, groupTables...)
-			everything := lipgloss.JoinVertical(lipgloss.Center, raceTable, tables)
+			footer := m.help.View(m.raceKeys)
+			everything := bodyPadding.Render(lipgloss.JoinVertical(lipgloss.Left, raceTable, tables, footer))
 			return everything
 		}
 
