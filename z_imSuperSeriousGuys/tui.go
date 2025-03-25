@@ -365,6 +365,8 @@ func (m Tui) View() string {
 			footer := m.help.View(m.raceKeys)
 			everything := bodyPadding.Render(lipgloss.JoinVertical(lipgloss.Left, raceTable, tables, footer))
 			return everything
+		case observeView:
+			//Work on this next you dingbat
 		}
 
 	}
