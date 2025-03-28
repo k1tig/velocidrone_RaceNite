@@ -53,8 +53,7 @@ type room struct {
 	help     help.Model
 	raceKeys raceTableKeyMap
 
-	form   *huh.Form
-	roomId int // room form will assign id for future api calls
+	form *huh.Form
 	//roomKey     int // permision to mod racesRecords on server
 
 	raceTable   table.Model
@@ -103,8 +102,6 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
-			return m, tea.Interrupt
-		case "esc", "q":
 			return m, tea.Quit
 		}
 	//msg cases
@@ -153,7 +150,8 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, initRaceTableCmd(m.raceRecord.Pilots)
 		}
 	case viewstate:
-		m.racetable, cmd = m.raceTable.Update(msg)
+		m.raceTable, cmd = m.raceTable.Update(msg)
+		cmds = append(cmds, cmd)
 	}
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
