@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -13,6 +14,7 @@ import (
 
 type roomstate int
 
+// msgs
 type recordMsg struct {
 	raceRecord raceRecord
 }
@@ -37,9 +39,17 @@ func initRaceTableCmd(pilots []Pilot) tea.Cmd {
 	}
 }
 
-const maxWidth = 80
+type findRaceMsg struct{}
+
+func findRaceCmd() tea.Cmd {
+	return func() tea.Msg {
+		return findRaceMsg{}
+	}
+}
+
 const (
-	formstate roomstate = iota
+	defaultstate roomstate = iota
+	formstate
 	viewstate
 )
 
@@ -50,21 +60,20 @@ var (
 
 type room struct {
 	state    roomstate
-	width    int
 	help     help.Model
 	raceKeys raceTableKeyMap
 
-	form        *huh.Form
-	roomId      int
-	roomKey     int
+	form   *huh.Form
+	roomId int
+
+	//roomKey     int
 	raceTable   table.Model
 	colorTables []table.Model
 	raceRecord  raceRecord
 }
 
-func newRoomForm() room {
-	m := room{width: maxWidth}
-	m.form = huh.NewForm(
+func newRoomForm() *huh.Form {
+	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Key("raceid").
@@ -91,7 +100,7 @@ func newRoomForm() room {
 			WithShowHelp(false).
 			WithShowErrors(false),
 	)
-	return m
+	return form
 }
 func (m room) Init() tea.Cmd {
 	return nil
@@ -108,6 +117,11 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc", "q":
 			return m, tea.Quit
 		}
+	case findRaceMsg:
+		m.form = newRoomForm()
+		m.state = formstate
+		//return m, tea.Batch(cmds...)
+
 	case recordMsg:
 		m.raceRecord = msg.raceRecord
 		return m, initRaceTableCmd(m.raceRecord.Pilots)
@@ -131,34 +145,44 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 
 		}
+		return m, tea.Batch(cmds...)
 	}
-	// Process the form
-	/*form, cmd := m.form.Update(msg)
-	if f, ok := form.(*huh.Form); ok {
-		m.form = f
-		cmds = append(cmds, cmd)
-	}
-	if m.form.State == huh.StateCompleted {
-		if m.state == formstate {
-			x := m.form.GetString("raceid")
-			//// seriously don't forget raceKey
-			id, err := strconv.Atoi(x)
-			if err != nil {
-				fmt.Println("Error during conversion:", err)
-				return m, nil
-			}
-			m.roomId = id
-			//tea.Msg to go get raceRecord from server
+
+	switch m.state {
+
+	case formstate:
+		form, cmd := m.form.Update(msg)
+		if f, ok := form.(*huh.Form); ok {
+			m.form = f
+			cmds = append(cmds, cmd)
 		}
-		// **don't forget to add option for raceKey (modView)
-		// get race record to build race tables with + color tables
-		//
-	}*/
+		if m.form.State == huh.StateCompleted {
+			if m.state == formstate {
+				x := m.form.GetString("raceid")
+				//// seriously don't forget raceKey
+				id, err := strconv.Atoi(x)
+				if err != nil {
+					fmt.Println("Error during conversion:", err)
+					return m, nil
+				}
+				m.roomId = id
+				//tea.Msg to go get raceRecord from server
+			}
+			// **don't forget to add option for raceKey (modView)
+			// get race record to build race tables with + color tables
+			//
+		}
+
+	}
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 func (m room) View() string {
 	switch m.state {
+	case defaultstate:
+		return "default state"
+	case formstate:
+		return m.form.View()
 
 	case viewstate:
 		colorNames := []string{"Gold", "Magenta", "Cyan", "Orange", "Green"}

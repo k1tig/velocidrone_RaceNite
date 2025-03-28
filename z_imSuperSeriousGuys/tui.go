@@ -97,7 +97,7 @@ func NewTui() *Tui {
 	const defaultWidth = 20
 	menuItems := []list.Item{
 		mi("Create Race"),
-		mi("Spectate"),
+		mi("Find Race"),
 		mi("Moderate Race"),
 		mi("Help / Settings"),
 	}
@@ -139,6 +139,10 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m, cmd := m.createForm.Update(formCmd())
 					cmds = append(cmds, cmd, formCmd())
 					return m, tea.Batch(cmds...)
+				case "Find Race":
+					findRoom, cmd := m.room.Update(msg)
+					cmds = append(cmds, cmd, findRaceCmd())
+					return findRoom, tea.Batch(cmds...)
 				}
 			}
 			m.list, cmd = m.list.Update(msg)
