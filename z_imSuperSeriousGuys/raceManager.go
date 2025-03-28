@@ -152,6 +152,8 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.raceRecord = getRaceRecordsById(x)
 			return m, initRaceTableCmd(m.raceRecord.Pilots)
 		}
+	case viewstate:
+		m.racetable, cmd = m.raceTable.Update(msg)
 	}
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
@@ -253,6 +255,10 @@ func getRaceRecordsById(id string) raceRecord {
 		fmt.Println("Error:", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatalf("Request failed with status code: %d", resp.StatusCode)
+	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading response body:", err)

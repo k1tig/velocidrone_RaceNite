@@ -2,31 +2,42 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 // add grey group for catch-ups or late qualify
 
-type Bracket struct {
-	BracketID string `json:"bracketid"`
-	Rev       int    `json:"rev"`
-	Racers    []struct {
-		RaceID      int     `json:"raceid"`
-		Name        string  `json:"name"`
-		Qualifytime float32 `json:"qualifytime"`
-	} `json:"racers "`
+type Pilot struct {
+	DiscordName    string      `csv:"Display Name" json:"displayname"` // discord
+	VdName         string      `csv:"Player Name" json:"vdname"`
+	QualifyingTime string      `csv:"Lap Time" json:"qualifytime"`
+	ModelName      string      `csv:"Model Name" json:"modelname"`
+	Id             string      `csv:"ID" json:"id"`
+	Status         bool        `json:"status"` //used for checkin placeholder
+	Points         float64     `json:"points"`
+	RaceTimes      [10]float64 `json:"racetimes"`
+}
+
+type raceRecord struct {
+	Id         int     `json:"id"`
+	RoomPhrase string  `json:"roomphrase"`
+	Round      int     `json:"round"`
+	Turn       int     `json:"turn"`
+	Pilots     []Pilot `json:"pilots"`
 }
 
 /*type bracketStatus struct {
 	rev int
 }*/
 
-var Brackets []Bracket
+var records []raceRecord
 
 func main() {
 	router := gin.Default()
 	router.GET("/brackets", getBrackets)
+	router.GET("/brackets/:id", getBracketById)
 	router.POST("/brackets", initBracket)
 	router.PUT("/brackets/:id", editBracket)
 
@@ -34,43 +45,61 @@ func main() {
 }
 
 func initBracket(c *gin.Context) {
-	var newBracket Bracket
+	var newRecord raceRecord
 	newBracketOK := true
 
-	if err := c.BindJSON(&newBracket); err != nil {
+	if err := c.BindJSON(&newRecord); err != nil {
 		return
 	}
-	for _, i := range Brackets {
-		if i.BracketID == newBracket.BracketID {
+	for _, i := range records {
+		if i.Id == newRecord.Id {
 			c.IndentedJSON(http.StatusOK, gin.H{"message": " error, id already exists"}) // not correct status
 			newBracketOK = false
 			break
 		}
 	}
 	if newBracketOK {
-		Brackets = append(Brackets, newBracket)
-		c.IndentedJSON(http.StatusCreated, Brackets)
+		records = append(records, newRecord)
+		c.IndentedJSON(http.StatusCreated, records)
 	}
 
+}
+
+func getBracketById(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.IndentedJSON(http.StatusOK, gin.H{"message": " cannot convert recoed id to int"})
+		return
+	}
+	for _, i := range records {
+		if i.Id == id {
+			c.IndentedJSON(http.StatusOK, i)
+			return
+		}
+	}
 }
 
 func getBrackets(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, Brackets)
+	c.IndentedJSON(http.StatusOK, records)
 }
 
 func editBracket(c *gin.Context) {
-	var bracket Bracket
+	var bracket raceRecord
 	if err := c.BindJSON(&bracket); err != nil {
 		return
 	}
-	id := c.Param("id")
-	for x, b := range Brackets {
-		if b.BracketID == id {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.IndentedJSON(http.StatusOK, gin.H{"message": " cannot convert recoed id to int"})
+		return
+	}
+	for x, b := range records {
+		if b.Id == id {
 			bracketUpdated := false
-			for i, oringalRacer := range b.Racers {
-				for _, editRacer := range bracket.Racers {
-					if editRacer.RaceID == oringalRacer.RaceID {
-						Brackets[x].Racers[i] = editRacer
+			for i, oringalRacer := range b.Pilots {
+				for _, editRacer := range bracket.Pilots {
+					if editRacer.VdName == oringalRacer.VdName {
+						records[x].Pilots[i] = editRacer
 						if !bracketUpdated {
 							bracketUpdated = true
 						}
@@ -78,7 +107,7 @@ func editBracket(c *gin.Context) {
 				}
 			}
 			if bracketUpdated {
-				c.IndentedJSON(http.StatusOK, Brackets)
+				c.IndentedJSON(http.StatusOK, records)
 			} else {
 				c.IndentedJSON(http.StatusOK, gin.H{"message": "no update to brackets"})
 			}
