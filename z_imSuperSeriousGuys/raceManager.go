@@ -247,7 +247,7 @@ func getRaceRecords() []string {
 
 func getRaceRecordsById(id string) raceRecord {
 	var record raceRecord
-	url := "http://localhost:8080/brackets"
+	url := "http://localhost:8080/brackets/" + id
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Error:", err)
