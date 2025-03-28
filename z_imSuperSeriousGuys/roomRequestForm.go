@@ -13,38 +13,23 @@ import (
 )
 
 type roomstate int
-
-// msgs
-type recordMsg struct {
-	raceRecord raceRecord
-}
+type recordMsg struct{ raceRecord raceRecord }
+type initRaceTableMsg struct{ table table.Model }
+type findRaceMsg struct{}
 
 func recordCmd(rr raceRecord) tea.Cmd {
 	return func() tea.Msg {
 		return recordMsg{raceRecord: rr}
 	}
 }
-
-type initRaceTableMsg struct {
-	table table.Model
-}
-
 func initRaceTableCmd(pilots []Pilot) tea.Cmd {
 	initTable := buildRaceTable()
 	rows := updateRaceTable(pilots)
 	initTable.SetRows(rows)
-
-	return func() tea.Msg {
-		return initRaceTableMsg{table: initTable}
-	}
+	return func() tea.Msg { return initRaceTableMsg{table: initTable} }
 }
-
-type findRaceMsg struct{}
-
 func findRaceCmd() tea.Cmd {
-	return func() tea.Msg {
-		return findRaceMsg{}
-	}
+	return func() tea.Msg { return findRaceMsg{} }
 }
 
 const (
@@ -64,9 +49,9 @@ type room struct {
 	raceKeys raceTableKeyMap
 
 	form   *huh.Form
-	roomId int
+	roomId int // room form will assign id for future api calls
+	//roomKey     int // permision to mod racesRecords on server
 
-	//roomKey     int
 	raceTable   table.Model
 	colorTables []table.Model
 	raceRecord  raceRecord
@@ -117,11 +102,10 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc", "q":
 			return m, tea.Quit
 		}
+	//msg cases
 	case findRaceMsg:
 		m.form = newRoomForm()
 		m.state = formstate
-		//return m, tea.Batch(cmds...)
-
 	case recordMsg:
 		m.raceRecord = msg.raceRecord
 		return m, initRaceTableCmd(m.raceRecord.Pilots)
@@ -129,7 +113,6 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.raceTable = msg.table
 		sortedPilots := makeSortedRaceList(m.raceRecord.Pilots)
 		pilotGroups := groupsArray(sortedPilots)
-
 		m.colorTables = makeColorTables(pilotGroups)
 		indexLen := len(pilotGroups)
 		for i := 0; i < indexLen; i++ {
@@ -139,17 +122,13 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.colorTables[i].SetRows(rows)
 			}
 			m.state = viewstate
-
 			m.raceTable, cmd = m.raceTable.Update(msg)
-
 			cmds = append(cmds, cmd)
-
 		}
 		return m, tea.Batch(cmds...)
 	}
-
+	//state switches
 	switch m.state {
-
 	case formstate:
 		form, cmd := m.form.Update(msg)
 		if f, ok := form.(*huh.Form); ok {
@@ -166,13 +145,8 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 				m.roomId = id
-				//tea.Msg to go get raceRecord from server
 			}
-			// **don't forget to add option for raceKey (modView)
-			// get race record to build race tables with + color tables
-			//
 		}
-
 	}
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
@@ -202,12 +176,10 @@ func (m room) View() string {
 			groupTables = append(groupTables, table)
 
 		}
-
 		tables := lipgloss.JoinHorizontal(lipgloss.Center, groupTables...)
 		footer := m.help.View(m.raceKeys)
 		everything := bodyPadding.Render(lipgloss.JoinVertical(lipgloss.Left, raceTable, tables, footer))
 		return everything
 	}
-
 	return fmt.Sprint(m.state, Dingy)
 }
