@@ -321,7 +321,7 @@ func groupsArray(vdList [][]string) [][][]string {
 	return groupStructure
 }
 
-func (m Tui) makeColorTables(brackets [][][]string) (tableList []table.Model) {
+func makeColorTables(brackets [][][]string) (tableList []table.Model) {
 	indexLen := len(brackets)
 	colors := []string{"190", "171", "123", "214", "47"}
 

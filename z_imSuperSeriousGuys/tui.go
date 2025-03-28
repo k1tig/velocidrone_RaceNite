@@ -42,6 +42,7 @@ type Tui struct {
 	help    help.Model
 
 	createForm csvForm
+	room       room
 
 	list         list.Model
 	vdSearch     list.Model
@@ -135,7 +136,7 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				switch m.list.SelectedItem().(mi) {
 				case "Create Race":
 					m.state = createView
-					m, cmd := m.createForm.Update(msg)
+					m, cmd := m.createForm.Update(formCmd())
 					cmds = append(cmds, cmd, formCmd())
 					return m, tea.Batch(cmds...)
 				}
@@ -220,24 +221,29 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.raceRecord.Pilots = m.registeredPilots
 					m.raceRecord.Round = 1
 					m.raceRecord.Turn = 1
-					m.raceTable = buildRaceTable()
-					rows := updateRaceTable(m.raceRecord.Pilots)
-					m.raceTable.SetRows(rows)
-					m.state = modView
-					m.focused = raceTable
-					m.raceTable.Focus()
 
-					sortedRacers := makeSortedRaceList(m.registeredPilots)
-					groups := groupsArray(sortedRacers)
-					m.colorTables = m.makeColorTables(groups)
-					indexLen := len(groups)
-					for i := 0; i < indexLen; i++ {
-						rows := []table.Row{}
-						for _, x := range groups[i] {
-							rows = append(rows, x)
-							m.colorTables[i].SetRows(rows)
-						}
-					}
+					/*
+						m.raceTable = buildRaceTable()
+						rows := updateRaceTable(m.raceRecord.Pilots)
+						m.raceTable.SetRows(rows)
+						m.state = modView
+						m.focused = raceTable
+						m.raceTable.Focus()
+
+						sortedRacers := makeSortedRaceList(m.registeredPilots)
+						groups := groupsArray(sortedRacers)
+						m.colorTables = m.makeColorTables(groups)
+						indexLen := len(groups)
+						for i := 0; i < indexLen; i++ {
+							rows := []table.Row{}
+							for _, x := range groups[i] {
+								rows = append(rows, x)
+								m.colorTables[i].SetRows(rows)
+							}
+						}*/
+					room, cmd := m.room.Update(msg)
+					cmds = append(cmds, cmd, recordCmd(m.raceRecord)) // do not fuck with this
+					return room, tea.Batch(cmds...)
 				}
 			}
 

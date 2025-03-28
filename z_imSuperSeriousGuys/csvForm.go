@@ -18,7 +18,7 @@ type csvForm struct {
 	formReady bool
 }
 
-func (e csvForm) Init() tea.Cmd { return e.form.Init() }
+func (e csvForm) Init() tea.Cmd { return nil }
 func (e csvForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
@@ -27,7 +27,6 @@ func (e csvForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return e, nil
 	case formMsg:
 		e = initForm()
-		e.form.Init()
 		e.formReady = true
 
 	case tea.KeyMsg:
