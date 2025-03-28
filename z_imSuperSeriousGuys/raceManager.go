@@ -1,7 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -104,10 +109,12 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	//msg cases
 	case findRaceMsg:
+		rooms = getRaceRecords()
 		m.form = newRoomForm()
 		m.state = formstate
 	case recordMsg:
 		m.raceRecord = msg.raceRecord
+		m.sendRaceRecord()
 		return m, initRaceTableCmd(m.raceRecord.Pilots)
 	case initRaceTableMsg:
 		m.raceTable = msg.table
@@ -124,7 +131,9 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = viewstate
 			m.raceTable, cmd = m.raceTable.Update(msg)
 			cmds = append(cmds, cmd)
+
 		}
+
 		return m, tea.Batch(cmds...)
 	}
 	//state switches
@@ -135,17 +144,13 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.form = f
 			cmds = append(cmds, cmd)
 		}
+
+		///////////fix this shit
 		if m.form.State == huh.StateCompleted {
-			if m.state == formstate {
-				x := m.form.GetString("raceid")
-				//// seriously don't forget raceKey
-				id, err := strconv.Atoi(x)
-				if err != nil {
-					fmt.Println("Error during conversion:", err)
-					return m, nil
-				}
-				m.roomId = id
-			}
+			x := m.form.GetString("raceid")
+			//// seriously don't forget raceKey
+			m.raceRecord = getRaceRecordsById(x)
+			return m, initRaceTableCmd(m.raceRecord.Pilots)
 		}
 	}
 	cmds = append(cmds, cmd)
@@ -182,4 +187,79 @@ func (m room) View() string {
 		return everything
 	}
 	return fmt.Sprint(m.state, Dingy)
+}
+
+func (m room) sendRaceRecord() {
+	url := "http://localhost:8080/brackets"
+	post := m.raceRecord
+
+	requestBody, err := json.Marshal(post)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		fmt.Printf("Request failed with status code: %d\n", resp.StatusCode)
+		return
+	}
+
+}
+
+func getRaceRecords() []string {
+	type records []raceRecord
+	var recordsData records
+	var raceIds []string
+	url := "http://localhost:8080/brackets"
+
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+	}
+
+	err = json.Unmarshal(body, &recordsData)
+	if err != nil {
+		fmt.Println("error unmarshalling json from server:", err)
+	}
+
+	for _, raceId := range recordsData {
+		raceIds = append(raceIds, strconv.Itoa(raceId.Id))
+	}
+	return raceIds
+}
+
+func getRaceRecordsById(id string) raceRecord {
+	var record raceRecord
+	url := "http://localhost:8080/brackets"
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+	}
+	err = json.Unmarshal(body, &record)
+	if err != nil {
+		fmt.Println("error unmarshalling json from server:", err)
+	}
+	return record
 }
