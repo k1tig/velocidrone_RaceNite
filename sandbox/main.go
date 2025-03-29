@@ -8,6 +8,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+//  example: https://gowebexamples.com/websockets/
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
