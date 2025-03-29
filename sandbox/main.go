@@ -10,6 +10,7 @@ import (
 
 //  example: https://gowebexamples.com/websockets/
 
+var clients []websocket.Conn
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -21,6 +22,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 
 func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	conn, _ := upgrader.Upgrade(w, r, nil) // error ignored for sake of simplicity
+	clients = append(clients, *conn)
 
 	for {
 		// Read message from browser
@@ -33,8 +35,11 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("%s sent: %s\n", conn.RemoteAddr(), string(msg))
 
 		// Write message back to browser
-		if err = conn.WriteMessage(msgType, msg); err != nil {
-			return
+		for _, client := range clients {
+			// Write message back to browser
+			if err = client.WriteMessage(msgType, msg); err != nil {
+				return
+			}
 		}
 	}
 }
