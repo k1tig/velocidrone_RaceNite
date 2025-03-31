@@ -5,6 +5,7 @@ go 1.22.1
 require (
 	github.com/charmbracelet/huh v0.6.0
 	github.com/gin-gonic/gin v1.10.0
+	github.com/gorilla/websocket v1.5.3
 )
 
 require (

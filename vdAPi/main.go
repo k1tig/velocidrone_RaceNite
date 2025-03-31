@@ -35,7 +35,12 @@ type raceRecord struct {
 var records []raceRecord
 
 func main() {
+	hub := newHub()
+	go hub.run()
 	router := gin.Default()
+	router.GET("/ws", func(c *gin.Context) {
+		serveWs(hub, c)
+	})
 	router.GET("/brackets", getBrackets)
 	router.GET("/brackets/:id", getBracketById)
 	router.POST("/brackets", initBracket)
