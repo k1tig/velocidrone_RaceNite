@@ -38,6 +38,8 @@ type Client struct { // Client is a middleman between the websocket connection a
 	send chan []byte // Buffered channel of outbound messages.
 }
 
+var clients = make(map[*Client]bool)
+
 type Message struct {
 	Event   string          `json:"event"`
 	Payload json.RawMessage `json:"payload"`
@@ -59,7 +61,6 @@ func (c *Client) readPump() { //exchange from ws to hub
 			}
 			break
 		}
-
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		c.hub.broadcast <- message
 	}
@@ -75,7 +76,6 @@ func routeMessage(message []byte) {
 	switch msg.Event {
 	case "register":
 	}
-
 }
 
 func (c *Client) writePump() { // writePump pumps messages from the hub to the websocket connection.
@@ -116,21 +116,6 @@ func (c *Client) writePump() { // writePump pumps messages from the hub to the w
 	}
 }
 
-/*
-func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) { // serveWs handles websocket connections
-
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
-		client.hub.register <- client
-
-		go client.writePump()
-		go client.readPump()
-	}
-*/
 func serveWs(hub *Hub, c *gin.Context) {
 	// Upgrade the HTTP connection to a WebSocket connection
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
@@ -142,6 +127,7 @@ func serveWs(hub *Hub, c *gin.Context) {
 
 	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
 	client.hub.register <- client
+	clients[client] = true
 	go client.writePump()
 	go client.readPump()
 

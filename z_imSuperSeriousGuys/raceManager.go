@@ -15,12 +15,19 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gorilla/websocket"
 )
 
 type roomstate int
 type recordMsg struct{ raceRecord raceRecord }
 type initRaceTableMsg struct{ table table.Model }
 type findRaceMsg struct{}
+type initWsMsg struct{}
+
+type Message struct {
+	Event      string          `json:"event"`
+	Parameters json.RawMessage `json:"parameters"`
+}
 
 func recordCmd(rr raceRecord) tea.Cmd {
 	return func() tea.Msg {
@@ -35,6 +42,37 @@ func initRaceTableCmd(pilots []Pilot) tea.Cmd {
 }
 func findRaceCmd() tea.Cmd {
 	return func() tea.Msg { return findRaceMsg{} }
+}
+func initWsCmd() tea.Cmd {
+	return func() tea.Msg { return initWsMsg{} }
+}
+
+func (m room) readWebSocket() tea.Cmd {
+	// Start listening for WebSocket messages in a goroutine
+	return func() tea.Msg {
+		for {
+			var msg Message
+			_, message, err := m.conn.ReadMessage()
+			if err != nil {
+				fmt.Printf("err: %s", err)
+			}
+
+			err = json.Unmarshal(message, &msg)
+			if err != nil {
+				fmt.Printf("err: %s", err)
+			}
+
+			switch msg.Event {
+			case "update":
+				var rr raceRecord
+				err := json.Unmarshal(msg.Parameters, &rr)
+				if err != nil {
+					fmt.Printf("err: %s", err)
+				}
+				return initRaceTableCmd(rr.Pilots)
+			}
+		}
+	}
 }
 
 const (
@@ -52,8 +90,8 @@ type room struct {
 	state    roomstate
 	help     help.Model
 	raceKeys raceTableKeyMap
-
-	form *huh.Form
+	form     *huh.Form
+	conn     *websocket.Conn
 	//roomKey     int // permision to mod racesRecords on server
 
 	raceTable   table.Model
@@ -127,11 +165,20 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.state = viewstate
 			m.raceTable, cmd = m.raceTable.Update(msg)
+
 			cmds = append(cmds, cmd)
 
 		}
+	case initWsMsg:
+		conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/ws", nil)
+		m.conn = conn
+		if err != nil {
+			log.Fatal("dial:", err)
 
-		return m, tea.Batch(cmds...)
+		}
+		m.readWebSocket()
+		return m, cmd
+
 	}
 	//state switches
 	switch m.state {
@@ -145,10 +192,10 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		///////////fix this shit
 		if m.form.State == huh.StateCompleted {
 			x := m.form.GetString("raceid")
-			//// seriously don't forget raceKey
 			m.raceRecord = getRaceRecordsById(x)
-			return m, initRaceTableCmd(m.raceRecord.Pilots)
+			return m, tea.Batch(initRaceTableCmd(m.raceRecord.Pilots), initWsCmd())
 		}
+
 	case viewstate:
 		m.raceTable, cmd = m.raceTable.Update(msg)
 		cmds = append(cmds, cmd)
@@ -159,7 +206,7 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m room) View() string {
 	switch m.state {
 	case defaultstate:
-		return "default state"
+		return "Connecting...."
 	case formstate:
 		return m.form.View()
 

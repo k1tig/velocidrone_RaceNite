@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -112,13 +115,35 @@ func editBracket(c *gin.Context) {
 				}
 			}
 			if bracketUpdated {
+				type message struct {
+					Event      string          `json:"event"`
+					Parameters json.RawMessage `json:"parameters"`
+				}
+				var msg message
 				c.IndentedJSON(http.StatusOK, records)
-			} else {
-				c.IndentedJSON(http.StatusOK, gin.H{"message": "no update to brackets"})
+				msg.Event = "update"
+				msg.Parameters, err = json.Marshal(bracket)
+				if err != nil {
+					fmt.Println("Error json")
+					//fmt.Println(params)
+				}
+				send, err := json.Marshal(msg)
+				if err != nil {
+					fmt.Println("Error json")
+				}
+				for client := range clients {
+					err := client.conn.WriteJSON(send)
+					if err != nil {
+						log.Printf("Error sending update: %v, removing client", err)
+						client.conn.Close()
+						delete(clients, client)
+					}
+				}
 			}
-			break
+		} else {
+			c.IndentedJSON(http.StatusOK, gin.H{"message": "no update to brackets"})
 		}
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "bracket not found"})
-	}
 
+	}
+	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "bracket not found"})
 }
