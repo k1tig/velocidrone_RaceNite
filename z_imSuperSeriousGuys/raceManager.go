@@ -22,7 +22,10 @@ type roomstate int
 type recordMsg struct{ raceRecord raceRecord }
 type initRaceTableMsg struct{ table table.Model }
 type findRaceMsg struct{}
-type initWsMsg struct{}
+type initWsMsg struct {
+	conn *websocket.Conn
+}
+type responseMsg struct{}
 
 type Message struct {
 	Event      string          `json:"event"`
@@ -44,11 +47,19 @@ func findRaceCmd() tea.Cmd {
 	return func() tea.Msg { return findRaceMsg{} }
 }
 func initWsCmd() tea.Cmd {
-	return func() tea.Msg { return initWsMsg{} }
+	return func() tea.Msg {
+		conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/ws", nil)
+		if err != nil {
+			log.Fatal("dial:", err)
+		}
+		return initWsMsg{conn}
+	}
 }
 
 func (m room) readWebSocket() tea.Cmd {
 	// Start listening for WebSocket messages in a goroutine
+	//return func() tea.Msg {
+
 	return func() tea.Msg {
 		for {
 			var msg Message
@@ -56,22 +67,24 @@ func (m room) readWebSocket() tea.Cmd {
 			if err != nil {
 				fmt.Printf("err: %s", err)
 			}
-
 			err = json.Unmarshal(message, &msg)
 			if err != nil {
 				fmt.Printf("err: %s", err)
 			}
-
-			switch msg.Event {
-			case "update":
-				var rr raceRecord
-				err := json.Unmarshal(msg.Parameters, &rr)
-				if err != nil {
-					fmt.Printf("err: %s", err)
-				}
-				return initRaceTableCmd(rr.Pilots)
+			var rr raceRecord
+			err = json.Unmarshal(msg.Parameters, &rr)
+			if err != nil {
+				fmt.Printf("err: %s", err)
 			}
+			m.raceRecord = rr
+			m.sub <- struct{}{}
 		}
+	}
+}
+
+func waitForMsgCmd(sub chan struct{}) tea.Cmd {
+	return func() tea.Msg {
+		return responseMsg(<-sub)
 	}
 }
 
@@ -92,6 +105,7 @@ type room struct {
 	raceKeys raceTableKeyMap
 	form     *huh.Form
 	conn     *websocket.Conn
+	sub      chan struct{}
 	//roomKey     int // permision to mod racesRecords on server
 
 	raceTable   table.Model
@@ -170,15 +184,14 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		}
 	case initWsMsg:
-		conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/ws", nil)
-		m.conn = conn
-		if err != nil {
-			log.Fatal("dial:", err)
+		m.conn = msg.conn
+		return m, tea.Batch(m.readWebSocket(), waitForMsgCmd(m.sub))
+	case responseMsg:
+		//m.raceRecord = raceRecord(msg)
+		//m.raceRecord.Pilots = msg.Pilots
 
-		}
-		m.readWebSocket()
-		return m, cmd
-
+		//pilots := msg.Pilots
+		return m, tea.Batch(initRaceTableCmd(m.raceRecord.Pilots))
 	}
 	//state switches
 	switch m.state {
@@ -193,7 +206,9 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.form.State == huh.StateCompleted {
 			x := m.form.GetString("raceid")
 			m.raceRecord = getRaceRecordsById(x)
-			return m, tea.Batch(initRaceTableCmd(m.raceRecord.Pilots), initWsCmd())
+			m.state = defaultstate
+			m.sub = make(chan struct{})
+			return m, initWsCmd()
 		}
 
 	case viewstate:
