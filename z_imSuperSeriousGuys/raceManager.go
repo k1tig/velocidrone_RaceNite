@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"strconv"
 	"time"
 
@@ -23,48 +22,9 @@ type roomstate int
 type recordMsg struct{ raceRecord raceRecord }
 type initRaceTableMsg struct{ table table.Model }
 type findRaceMsg struct{}
-
 type Message struct {
 	Event      string          `json:"event"`
 	Parameters json.RawMessage `json:"parameters"`
-}
-
-func recordCmd(rr raceRecord) tea.Cmd {
-	return func() tea.Msg {
-		return recordMsg{raceRecord: rr}
-	}
-}
-func initRaceTableCmd(pilots []Pilot) tea.Cmd {
-	initTable := buildRaceTable()
-	rows := updateRaceTable(pilots)
-	initTable.SetRows(rows)
-	return func() tea.Msg { return initRaceTableMsg{table: initTable} }
-}
-func findRaceCmd() tea.Cmd {
-	return func() tea.Msg { return findRaceMsg{} }
-}
-
-func (m room) initWsReader() tea.Cmd {
-	// Start listening for WebSocket messages in a goroutine
-	//return func() tea.Msg {
-
-	return func() tea.Msg {
-		for {
-			_, message, err := m.conn.ReadMessage()
-			if err != nil {
-				fmt.Printf("err: %s", err)
-			}
-			m.sub <- message
-		}
-	}
-}
-
-type responseMsg []byte
-
-func waitForMsg(sub chan []byte) tea.Cmd {
-	return func() tea.Msg {
-		return responseMsg(<-sub)
-	}
 }
 
 const (
@@ -91,24 +51,6 @@ type room struct {
 	raceTable   table.Model
 	colorTables []table.Model
 	raceRecord  raceRecord
-}
-
-func initWs() room {
-	sub := make(chan []byte)
-	done := make(chan struct{})
-	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws"}
-	log.Printf("connecting to %s", u.String())
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
-	if err != nil {
-		log.Fatal("dial:", err)
-	}
-	conn := c
-
-	return room{
-		sub:  sub,
-		done: done,
-		conn: conn,
-	}
 }
 
 func newRoomForm() *huh.Form {
@@ -142,7 +84,6 @@ func newRoomForm() *huh.Form {
 	return form
 }
 func (m room) Init() tea.Cmd {
-	m = initWs()
 	return tea.Batch(m.initWsReader(), waitForMsg(m.sub))
 }
 func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -182,6 +123,11 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		//might be broke as shit now
+	case roomMsg:
+		m.sub = msg.room.sub
+		m.done = msg.room.done
+		m.conn = msg.room.conn
+		return m, tea.Batch(m.initWsReader(), waitForMsg(m.sub))
 	case responseMsg:
 		var message Message
 		err := json.Unmarshal(msg, &message)
@@ -213,7 +159,7 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.form.State == huh.StateCompleted {
 			x := m.form.GetString("raceid")
 			m.raceRecord = getRaceRecordsById(x)
-			return m, initRaceTableCmd(m.raceRecord.Pilots)
+			return m, tea.Batch(initRaceTableCmd(m.raceRecord.Pilots)) ///////thisssss is where its fuckeeedd
 		}
 
 	case viewstate:
@@ -333,4 +279,73 @@ func getRaceRecordsById(id string) raceRecord {
 		fmt.Println("error unmarshalling json from server:", err)
 	}
 	return record
+}
+
+func recordCmd(rr raceRecord) tea.Cmd {
+	return func() tea.Msg {
+		return recordMsg{raceRecord: rr}
+	}
+}
+func initRaceTableCmd(pilots []Pilot) tea.Cmd {
+	initTable := buildRaceTable()
+	rows := updateRaceTable(pilots)
+	initTable.SetRows(rows)
+	return func() tea.Msg { return initRaceTableMsg{table: initTable} }
+}
+func findRaceCmd() tea.Cmd {
+	return func() tea.Msg { return findRaceMsg{} }
+}
+
+type roomMsg struct{ room room }
+
+/*
+func initWs() tea.Cmd {
+	return func() tea.Msg {
+		sub := make(chan []byte)
+		done := make(chan struct{})
+		u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws"}
+		log.Printf("connecting to %s", u.String())
+		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+		if err != nil {
+			log.Fatal("dial:", err)
+		}
+		conn := c
+
+		var room = room{
+			sub:  sub,
+			done: done,
+			conn: conn,
+		}
+
+		return roomMsg{
+			room: room,
+		}
+	}
+
+}*/
+
+// /////////////////////////////////////////////////////////////   this is broken /////////////////////////////////
+func (m room) initWsReader() tea.Cmd {
+	// Start listening for WebSocket messages in a goroutine
+	//return func() tea.Msg {
+
+	return func() tea.Msg {
+		for {
+			_, message, err := m.conn.ReadMessage()
+			if err != nil {
+				log.Fatal("init reader err")
+			}
+			m.sub <- message
+		}
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+type responseMsg []byte
+
+func waitForMsg(sub chan []byte) tea.Cmd {
+	return func() tea.Msg {
+		return responseMsg(<-sub)
+	}
 }

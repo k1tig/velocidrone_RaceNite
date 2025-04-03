@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -85,6 +84,7 @@ func getBracketById(c *gin.Context) {
 			return
 		}
 	}
+
 }
 
 func getBrackets(c *gin.Context) {
@@ -124,20 +124,24 @@ func editBracket(c *gin.Context) {
 				msg.Event = "update"
 				msg.Parameters, err = json.Marshal(bracket)
 				if err != nil {
-					fmt.Println("Error json")
+					log.Printf("Error json") //name
 					//fmt.Println(params)
 				}
 				send, err := json.Marshal(msg)
 				if err != nil {
-					fmt.Println("Error json")
+					log.Printf("Error: json from PUT failed") //name
 				}
 				for client := range clients {
-					err := client.conn.WriteJSON(send)
+					client.send <- send
+
+					/*err := client.conn.WriteJSON(send)
 					if err != nil {
-						log.Printf("Error sending update: %v, removing client", err)
+
+						//////this is the broken cocksucker//////////
+						log.Printf("broken cock sucker sending update: %v, removing client", err)
 						client.conn.Close()
 						delete(clients, client)
-					}
+					}*/
 				}
 			}
 		} else {
@@ -146,4 +150,22 @@ func editBracket(c *gin.Context) {
 
 	}
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "bracket not found"})
+}
+
+func serveWs(hub *Hub, c *gin.Context) {
+	// Upgrade the HTTP connection to a WebSocket connection
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		log.Println("upgrade:", err)
+		return
+	}
+	defer conn.Close()
+	log.Println("Client connected:", conn.RemoteAddr())
+
+	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+	//client.hub.register <- client
+	clients[client] = true
+	go client.writePump()
+	go client.readPump()
+
 }

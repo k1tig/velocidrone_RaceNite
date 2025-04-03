@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
@@ -114,21 +113,4 @@ func (c *Client) writePump() { // writePump pumps messages from the hub to the w
 			}
 		}
 	}
-}
-
-func serveWs(hub *Hub, c *gin.Context) {
-	// Upgrade the HTTP connection to a WebSocket connection
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		log.Println("upgrade:", err)
-		return
-	}
-	defer conn.Close()
-
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
-	client.hub.register <- client
-	clients[client] = true
-	go client.writePump()
-	go client.readPump()
-
 }

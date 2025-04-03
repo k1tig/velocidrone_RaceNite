@@ -126,7 +126,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.SetContent(lipgloss.NewStyle().Width(m.viewport.Width).Render(strings.Join(m.messages, "\n")))
 		m.textarea.Reset()
 		m.viewport.GotoBottom()
-		cmds = append(cmds, waitForMsg(m.msg), m.initReader())
+		cmds = append(cmds, waitForMsg(m.msg))
 
 	// We handle errors just like any other message
 	case errMsg:

@@ -6,6 +6,8 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
+	"net/url"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -14,6 +16,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gorilla/websocket"
 )
 
 type viewState int
@@ -108,7 +111,23 @@ func NewTui() *Tui {
 	l.Styles.PaginationStyle = paginationStyle
 	l.Styles.HelpStyle = helpStyle
 
-	return &Tui{list: l, state: mainView, fmvKeys: theFmvKeys, vdSearchKeys: theVdSearchKeys, raceKeys: theRaceTableKeys, help: help.New()}
+	sub := make(chan []byte)
+	done := make(chan struct{})
+
+	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws"}
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		log.Fatal("dial:", err)
+	}
+	conn := c
+
+	room := room{
+		sub:  sub,
+		done: done,
+		conn: conn,
+	}
+
+	return &Tui{list: l, state: mainView, fmvKeys: theFmvKeys, vdSearchKeys: theVdSearchKeys, raceKeys: theRaceTableKeys, help: help.New(), room: room}
 }
 
 func (m Tui) Init() tea.Cmd {
