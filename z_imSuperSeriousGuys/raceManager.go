@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -22,10 +23,6 @@ type roomstate int
 type recordMsg struct{ raceRecord raceRecord }
 type initRaceTableMsg struct{ table table.Model }
 type findRaceMsg struct{}
-type initWsMsg struct {
-	conn *websocket.Conn
-}
-type responseMsg struct{}
 
 type Message struct {
 	Event      string          `json:"event"`
@@ -46,43 +43,25 @@ func initRaceTableCmd(pilots []Pilot) tea.Cmd {
 func findRaceCmd() tea.Cmd {
 	return func() tea.Msg { return findRaceMsg{} }
 }
-func initWsCmd() tea.Cmd {
-	return func() tea.Msg {
-		conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/ws", nil)
-		if err != nil {
-			log.Fatal("dial:", err)
-		}
-		return initWsMsg{conn}
-	}
-}
 
-func (m room) readWebSocket() tea.Cmd {
+func (m room) initWsReader() tea.Cmd {
 	// Start listening for WebSocket messages in a goroutine
 	//return func() tea.Msg {
 
 	return func() tea.Msg {
 		for {
-			var msg Message
 			_, message, err := m.conn.ReadMessage()
 			if err != nil {
 				fmt.Printf("err: %s", err)
 			}
-			err = json.Unmarshal(message, &msg)
-			if err != nil {
-				fmt.Printf("err: %s", err)
-			}
-			var rr raceRecord
-			err = json.Unmarshal(msg.Parameters, &rr)
-			if err != nil {
-				fmt.Printf("err: %s", err)
-			}
-			m.raceRecord = rr
-			m.sub <- struct{}{}
+			m.sub <- message
 		}
 	}
 }
 
-func waitForMsgCmd(sub chan struct{}) tea.Cmd {
+type responseMsg []byte
+
+func waitForMsg(sub chan []byte) tea.Cmd {
 	return func() tea.Msg {
 		return responseMsg(<-sub)
 	}
@@ -105,12 +84,31 @@ type room struct {
 	raceKeys raceTableKeyMap
 	form     *huh.Form
 	conn     *websocket.Conn
-	sub      chan struct{}
+	sub      chan []byte
+	done     chan struct{}
 	//roomKey     int // permision to mod racesRecords on server
 
 	raceTable   table.Model
 	colorTables []table.Model
 	raceRecord  raceRecord
+}
+
+func initWs() room {
+	sub := make(chan []byte)
+	done := make(chan struct{})
+	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws"}
+	log.Printf("connecting to %s", u.String())
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		log.Fatal("dial:", err)
+	}
+	conn := c
+
+	return room{
+		sub:  sub,
+		done: done,
+		conn: conn,
+	}
 }
 
 func newRoomForm() *huh.Form {
@@ -144,7 +142,8 @@ func newRoomForm() *huh.Form {
 	return form
 }
 func (m room) Init() tea.Cmd {
-	return nil
+	m = initWs()
+	return tea.Batch(m.initWsReader(), waitForMsg(m.sub))
 }
 func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
@@ -179,20 +178,28 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.state = viewstate
 			m.raceTable, cmd = m.raceTable.Update(msg)
-
 			cmds = append(cmds, cmd)
-
 		}
-	case initWsMsg:
-		m.conn = msg.conn
-		return m, tea.Batch(m.readWebSocket(), waitForMsgCmd(m.sub))
-	case responseMsg:
-		//m.raceRecord = raceRecord(msg)
-		//m.raceRecord.Pilots = msg.Pilots
 
-		//pilots := msg.Pilots
-		return m, tea.Batch(initRaceTableCmd(m.raceRecord.Pilots))
+		//might be broke as shit now
+	case responseMsg:
+		var message Message
+		err := json.Unmarshal(msg, &message)
+		if err != nil {
+			fmt.Printf("err: %s", err)
+		}
+		switch message.Event {
+		case "update":
+			var rr raceRecord
+			err := json.Unmarshal(message.Parameters, &rr)
+			if err != nil {
+				fmt.Printf("err: %s", err)
+			}
+			m.raceRecord = rr
+			return m, tea.Batch(initRaceTableCmd(rr.Pilots), m.initWsReader(), waitForMsg(m.sub))
+		}
 	}
+
 	//state switches
 	switch m.state {
 	case formstate:
@@ -206,9 +213,7 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.form.State == huh.StateCompleted {
 			x := m.form.GetString("raceid")
 			m.raceRecord = getRaceRecordsById(x)
-			m.state = defaultstate
-			m.sub = make(chan struct{})
-			return m, initWsCmd()
+			return m, initRaceTableCmd(m.raceRecord.Pilots)
 		}
 
 	case viewstate:
