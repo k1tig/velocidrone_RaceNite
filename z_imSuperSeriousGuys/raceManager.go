@@ -31,6 +31,7 @@ const (
 	defaultstate roomstate = iota
 	formstate
 	viewstate
+	teststate
 )
 
 var (
@@ -51,6 +52,7 @@ type room struct {
 	raceTable   table.Model
 	colorTables []table.Model
 	raceRecord  raceRecord
+	testMsg     []byte
 }
 
 func newRoomForm() *huh.Form {
@@ -129,21 +131,16 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.conn = msg.room.conn
 		return m, tea.Batch(m.initWsReader(), waitForMsg(m.sub))
 	case responseMsg:
-		var message Message
-		err := json.Unmarshal(msg, &message)
+		var rr raceRecord
+		err := json.Unmarshal(msg, &rr)
 		if err != nil {
 			fmt.Printf("err: %s", err)
 		}
-		switch message.Event {
-		case "update":
-			var rr raceRecord
-			err := json.Unmarshal(message.Parameters, &rr)
-			if err != nil {
-				fmt.Printf("err: %s", err)
-			}
-			m.raceRecord = rr
-			return m, tea.Batch(initRaceTableCmd(rr.Pilots), m.initWsReader(), waitForMsg(m.sub))
-		}
+		m.raceRecord = rr
+		m.state = teststate
+		m.testMsg = msg
+		return m, tea.Batch(initRaceTableCmd(rr.Pilots), m.initWsReader(), waitForMsg(m.sub))
+
 	}
 
 	//state switches
@@ -171,6 +168,9 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 func (m room) View() string {
 	switch m.state {
+	case teststate:
+		message := "Recieved: " + string(m.testMsg)
+		return message
 	case defaultstate:
 		return "Connecting...."
 	case formstate:
@@ -298,37 +298,8 @@ func findRaceCmd() tea.Cmd {
 
 type roomMsg struct{ room room }
 
-/*
-func initWs() tea.Cmd {
-	return func() tea.Msg {
-		sub := make(chan []byte)
-		done := make(chan struct{})
-		u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws"}
-		log.Printf("connecting to %s", u.String())
-		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
-		if err != nil {
-			log.Fatal("dial:", err)
-		}
-		conn := c
-
-		var room = room{
-			sub:  sub,
-			done: done,
-			conn: conn,
-		}
-
-		return roomMsg{
-			room: room,
-		}
-	}
-
-}*/
-
 // /////////////////////////////////////////////////////////////   this is broken /////////////////////////////////
 func (m room) initWsReader() tea.Cmd {
-	// Start listening for WebSocket messages in a goroutine
-	//return func() tea.Msg {
-
 	return func() tea.Msg {
 		for {
 			_, message, err := m.conn.ReadMessage()
