@@ -53,10 +53,16 @@ func getBrackets(c *gin.Context) {
 // //////////tests if conn is active/////////
 func getWs(c *gin.Context) {
 	for i, _ := range clients {
-		log.Println("Client connected:", i.conn.RemoteAddr())
+		i.hub.printClients() 
 	}
-	c.IndentedJSON(http.StatusOK, nil)
 
+	c.IndentedJSON(http.StatusOK, nil)
+}
+
+func (h *Hub) printClients() {
+	for client := range h.clients {
+		log.Println("Client Connected: ", client.conn.RemoteAddr())
+	}
 }
 
 func editBracket(c *gin.Context) {
@@ -92,7 +98,7 @@ func editBracket(c *gin.Context) {
 
 				for client := range clients {
 					message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-					client.send <- message
+					client.hub.broadcast <- message
 
 					/*err := client.conn.WriteJSON(send)
 					if err != nil {
@@ -102,7 +108,6 @@ func editBracket(c *gin.Context) {
 						client.conn.Close()
 						delete(clients, client)
 					}*/
-
 				}
 				c.IndentedJSON(http.StatusOK, gin.H{"message:": " Update Successfull"})
 				return
@@ -110,7 +115,6 @@ func editBracket(c *gin.Context) {
 		} else {
 			c.IndentedJSON(http.StatusOK, gin.H{"message": "no update to brackets"})
 		}
-
 	}
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "bracket not found"})
 }
@@ -122,11 +126,10 @@ func serveWs(hub *Hub, c *gin.Context) {
 		log.Println("upgrade:", err)
 		return
 	}
-	defer conn.Close()
 	log.Println("Client connected:", conn.RemoteAddr())
 
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
-	//client.hub.register <- client
+	client := &Client{hub: hub, conn: conn, send: make(chan []byte)}
+	client.hub.register <- client ///////was it this???
 	clients[client] = true
 	go client.writePump()
 	go client.readPump()

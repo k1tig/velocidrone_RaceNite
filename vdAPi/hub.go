@@ -4,6 +4,8 @@
 
 package main
 
+import "log"
+
 type Hub struct {
 	clients    map[*Client]bool
 	broadcast  chan []byte
@@ -25,17 +27,19 @@ func (h *Hub) run() {
 		select {
 		case client := <-h.register:
 			h.clients[client] = true
-
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.send)
 			}
+
+			// I feel like this has do with something
 		case message := <-h.broadcast:
 			for client := range h.clients {
 				select {
 				case client.send <- message:
 				default:
+					log.Println("Hub message close")
 					close(client.send)
 					delete(h.clients, client)
 				}
