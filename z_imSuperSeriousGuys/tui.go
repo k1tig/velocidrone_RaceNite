@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -144,13 +145,12 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
 		case "ctrl+c":
+			closeWebSocket(m.room.conn)
 			return m, tea.Quit
 		}
 		switch m.state {
 		case mainView:
 			switch keypress := msg.String(); keypress {
-			case "q", "ctrl+c":
-				return m, tea.Quit
 			case "enter":
 				switch m.list.SelectedItem().(mi) {
 				case "Create Race":
@@ -402,4 +402,33 @@ func (m Tui) View() string {
 
 	body := m.list.View()
 	return body
+}
+
+func closeWebSocket(conn *websocket.Conn) {
+	err := conn.WriteControl(websocket.CloseMessage,
+		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
+		time.Now().Add(time.Second))
+	if err != nil && err != websocket.ErrCloseSent {
+		log.Println("write close error:", err)
+		return
+	}
+	err = conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+	if err != nil {
+		return
+	}
+
+	for {
+		_, _, err = conn.NextReader()
+		if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+			break
+		}
+		if err != nil {
+			break
+		}
+	}
+	err = conn.Close()
+	if err != nil {
+		log.Println("close error:", err)
+		return
+	}
 }

@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -108,11 +109,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
-			err := m.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			if err != nil {
-				fmt.Printf("error: %s", err)
-			}
-
+			closeWebSocket(m.conn)
+			time.Sleep(1 * time.Second)
 			return m, tea.Quit
 		case tea.KeyEnter:
 			text := m.textarea.Value()
@@ -168,5 +166,34 @@ func main() {
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func closeWebSocket(conn *websocket.Conn) {
+	err := conn.WriteControl(websocket.CloseMessage,
+		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
+		time.Now().Add(time.Second))
+	if err != nil && err != websocket.ErrCloseSent {
+		log.Println("write close error:", err)
+		return
+	}
+	err = conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+	if err != nil {
+		return
+	}
+
+	for {
+		_, _, err = conn.NextReader()
+		if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+			break
+		}
+		if err != nil {
+			break
+		}
+	}
+	err = conn.Close()
+	if err != nil {
+		log.Println("close error:", err)
+		return
 	}
 }

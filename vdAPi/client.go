@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -12,6 +13,7 @@ import (
 type Client struct { // Client is a middleman between the websocket connection and the hub.
 	hub  *Hub
 	conn *websocket.Conn
+	mu   sync.Mutex
 	//topics map[string]bool
 	send chan []byte // Buffered channel of outbound messages.
 }
@@ -40,6 +42,12 @@ type Message struct {
 	Payload json.RawMessage `json:"payload"`
 }
 
+func (c *Client) Send(messageType int, data []byte) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.conn.WriteMessage(messageType, data)
+}
+
 func (c *Client) readPump() { //exchange from ws to hub
 	defer func() {
 		c.hub.unregister <- c
@@ -52,7 +60,7 @@ func (c *Client) readPump() { //exchange from ws to hub
 		messageType, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error: %v", err) //name
+				log.Printf("Update: %v", err) //name
 			}
 			break
 		}

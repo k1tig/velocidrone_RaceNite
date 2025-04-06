@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 func initBracket(c *gin.Context) {
@@ -52,8 +53,8 @@ func getBrackets(c *gin.Context) {
 
 // //////////tests if conn is active/////////
 func getWs(c *gin.Context) {
-	for i, _ := range clients {
-		i.hub.printClients() 
+	for i := range clients {
+		i.hub.printClients()
 	}
 
 	c.IndentedJSON(http.StatusOK, nil)
@@ -98,16 +99,9 @@ func editBracket(c *gin.Context) {
 
 				for client := range clients {
 					message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-					client.hub.broadcast <- message
-
-					/*err := client.conn.WriteJSON(send)
-					if err != nil {
-
-						//////this is the broken cocksucker//////////
-						log.Printf("broken cock sucker sending update: %v, removing client", err)
-						client.conn.Close()
-						delete(clients, client)
-					}*/
+					
+					
+					client.Send(websocket.TextMessage, message)
 				}
 				c.IndentedJSON(http.StatusOK, gin.H{"message:": " Update Successfull"})
 				return

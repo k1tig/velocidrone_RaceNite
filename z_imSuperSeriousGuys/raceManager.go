@@ -86,7 +86,7 @@ func newRoomForm() *huh.Form {
 	return form
 }
 func (m room) Init() tea.Cmd {
-	return tea.Batch(m.initWsReader(), waitForMsg(m.sub))
+	return nil
 }
 func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
@@ -96,6 +96,7 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
+			closeWebSocket(m.conn)
 			return m, tea.Quit
 		}
 	//msg cases
@@ -103,10 +104,11 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		rooms = getRaceRecords()
 		m.form = newRoomForm()
 		m.state = formstate
+
 	case recordMsg:
 		m.raceRecord = msg.raceRecord
 		m.sendRaceRecord()
-		return m, initRaceTableCmd(m.raceRecord.Pilots)
+		cmds = append(cmds, m.initWsReader(), waitForMsg(m.sub), initRaceTableCmd(m.raceRecord.Pilots))
 	case initRaceTableMsg:
 		m.raceTable = msg.table
 		sortedPilots := makeSortedRaceList(m.raceRecord.Pilots)
@@ -123,13 +125,7 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.raceTable, cmd = m.raceTable.Update(msg)
 			cmds = append(cmds, cmd)
 		}
-
 		//might be broke as shit now
-	case roomMsg:
-		m.sub = msg.room.sub
-		m.done = msg.room.done
-		m.conn = msg.room.conn
-		return m, tea.Batch(m.initWsReader(), waitForMsg(m.sub))
 	case responseMsg:
 		var rr raceRecord
 		err := json.Unmarshal(msg, &rr)
@@ -137,10 +133,7 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			fmt.Printf("err: %s", err)
 		}
 		m.raceRecord = rr
-		m.state = teststate
-		m.testMsg = msg
-		return m, tea.Batch(initRaceTableCmd(rr.Pilots), m.initWsReader(), waitForMsg(m.sub))
-
+		cmds = append(cmds, initRaceTableCmd(m.raceRecord.Pilots), waitForMsg(m.sub))
 	}
 
 	//state switches
@@ -156,7 +149,8 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.form.State == huh.StateCompleted {
 			x := m.form.GetString("raceid")
 			m.raceRecord = getRaceRecordsById(x)
-			return m, tea.Batch(initRaceTableCmd(m.raceRecord.Pilots)) ///////thisssss is where its fuckeeedd
+			cmds = append(cmds, m.initWsReader(), waitForMsg(m.sub), initRaceTableCmd(m.raceRecord.Pilots))
+			return m, tea.Batch(cmds...)
 		}
 
 	case viewstate:
@@ -296,11 +290,10 @@ func findRaceCmd() tea.Cmd {
 	return func() tea.Msg { return findRaceMsg{} }
 }
 
-type roomMsg struct{ room room }
-
 // /////////////////////////////////////////////////////////////   this is broken /////////////////////////////////
 func (m room) initWsReader() tea.Cmd {
 	return func() tea.Msg {
+		defer close(m.done)
 		for {
 			_, message, err := m.conn.ReadMessage()
 			if err != nil {
@@ -311,8 +304,7 @@ func (m room) initWsReader() tea.Cmd {
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 type responseMsg []byte
 
 func waitForMsg(sub chan []byte) tea.Cmd {
