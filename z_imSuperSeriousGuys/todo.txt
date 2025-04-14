@@ -1,6 +1,0 @@
-*Todo list*
-
-- Put hardcoded limit on total racers
-- Create Help Prompts for existing interfaces
-- Format interfaces to the propper size
-- Create view for modifying raceData; manually and through websocket

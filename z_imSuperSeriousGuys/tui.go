@@ -122,6 +122,21 @@ func NewTui() *Tui {
 	}
 	conn := c
 
+	conn.SetPingHandler(func(appData string) error {
+		log.Println("Received ping!")
+		err := conn.WriteControl(websocket.PongMessage, []byte(appData), time.Now().Add(time.Second))
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	c.SetPongHandler(func(string) error {
+		//log.Println("Received pong")
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		return nil
+	})
+
 	room := room{
 		sub:  sub,
 		done: done,
@@ -245,25 +260,6 @@ func (m Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.raceRecord.Round = 1
 					m.raceRecord.Turn = 1
 
-					/*
-						m.raceTable = buildRaceTable()
-						rows := updateRaceTable(m.raceRecord.Pilots)
-						m.raceTable.SetRows(rows)
-						m.state = modView
-						m.focused = raceTable
-						m.raceTable.Focus()
-
-						sortedRacers := makeSortedRaceList(m.registeredPilots)
-						groups := groupsArray(sortedRacers)
-						m.colorTables = m.makeColorTables(groups)
-						indexLen := len(groups)
-						for i := 0; i < indexLen; i++ {
-							rows := []table.Row{}
-							for _, x := range groups[i] {
-								rows = append(rows, x)
-								m.colorTables[i].SetRows(rows)
-							}
-						}*/
 					room, cmd := m.room.Update(msg)
 					cmds = append(cmds, cmd, recordCmd(m.raceRecord)) // do not fuck with this
 					return room, tea.Batch(cmds...)
@@ -402,33 +398,4 @@ func (m Tui) View() string {
 
 	body := m.list.View()
 	return body
-}
-
-func closeWebSocket(conn *websocket.Conn) {
-	err := conn.WriteControl(websocket.CloseMessage,
-		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
-		time.Now().Add(time.Second))
-	if err != nil && err != websocket.ErrCloseSent {
-		log.Println("write close error:", err)
-		return
-	}
-	err = conn.SetReadDeadline(time.Now().Add(1 * time.Second))
-	if err != nil {
-		return
-	}
-
-	for {
-		_, _, err = conn.NextReader()
-		if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-			break
-		}
-		if err != nil {
-			break
-		}
-	}
-	err = conn.Close()
-	if err != nil {
-		log.Println("close error:", err)
-		return
-	}
 }

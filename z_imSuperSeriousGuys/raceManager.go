@@ -1,14 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log"
-	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/table"
@@ -55,36 +49,6 @@ type room struct {
 	testMsg     []byte
 }
 
-func newRoomForm() *huh.Form {
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Key("raceid").
-				Title("Active Races:").
-				OptionsFunc(func() []huh.Option[string] {
-					s := rooms
-					// simulate API call
-					time.Sleep(1 * time.Second)
-					return huh.NewOptions(s...)
-				},
-					huh.NewConfirm().
-						Key("done").
-						Title("All done?").
-						Validate(func(v bool) error {
-							if !v {
-								return fmt.Errorf("finish it")
-							}
-							return nil
-						}).
-						Affirmative("Yep").
-						Negative("Wait, no"),
-				),
-		).WithWidth(45).
-			WithShowHelp(false).
-			WithShowErrors(false),
-	)
-	return form
-}
 func (m room) Init() tea.Cmd {
 	return nil
 }
@@ -107,7 +71,7 @@ func (m room) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case recordMsg:
 		m.raceRecord = msg.raceRecord
-		m.sendRaceRecord()
+		sendRaceRecord(m.raceRecord)
 		cmds = append(cmds, m.initWsReader(), waitForMsg(m.sub), initRaceTableCmd(m.raceRecord.Pilots))
 	case initRaceTableMsg:
 		m.raceTable = msg.table
@@ -194,121 +158,4 @@ func (m room) View() string {
 		return everything
 	}
 	return fmt.Sprint(m.state, Dingy)
-}
-
-func (m room) sendRaceRecord() {
-	url := "http://localhost:8080/brackets"
-	post := m.raceRecord
-
-	requestBody, err := json.Marshal(post)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusCreated {
-		fmt.Printf("Request failed with status code: %d\n", resp.StatusCode)
-		return
-	}
-
-}
-
-func getRaceRecords() []string {
-	type records []raceRecord
-	var recordsData records
-	var raceIds []string
-	url := "http://localhost:8080/brackets"
-
-	resp, err := http.Get(url)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
-	}
-
-	err = json.Unmarshal(body, &recordsData)
-	if err != nil {
-		fmt.Println("error unmarshalling json from server:", err)
-	}
-
-	for _, raceId := range recordsData {
-		raceIds = append(raceIds, strconv.Itoa(raceId.Id))
-	}
-	return raceIds
-}
-
-func getRaceRecordsById(id string) raceRecord {
-	var record raceRecord
-	url := "http://localhost:8080/brackets/" + id
-	resp, err := http.Get(url)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("Request failed with status code: %d", resp.StatusCode)
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
-	}
-	err = json.Unmarshal(body, &record)
-	if err != nil {
-		fmt.Println("error unmarshalling json from server:", err)
-	}
-	return record
-}
-
-func recordCmd(rr raceRecord) tea.Cmd {
-	return func() tea.Msg {
-		return recordMsg{raceRecord: rr}
-	}
-}
-func initRaceTableCmd(pilots []Pilot) tea.Cmd {
-	initTable := buildRaceTable()
-	rows := updateRaceTable(pilots)
-	initTable.SetRows(rows)
-	return func() tea.Msg { return initRaceTableMsg{table: initTable} }
-}
-func findRaceCmd() tea.Cmd {
-	return func() tea.Msg { return findRaceMsg{} }
-}
-
-// /////////////////////////////////////////////////////////////   this is broken /////////////////////////////////
-func (m room) initWsReader() tea.Cmd {
-	return func() tea.Msg {
-		defer close(m.done)
-		for {
-			_, message, err := m.conn.ReadMessage()
-			if err != nil {
-				log.Fatal("init reader err")
-			}
-			m.sub <- message
-		}
-	}
-}
-
-// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-type responseMsg []byte
-
-func waitForMsg(sub chan []byte) tea.Cmd {
-	return func() tea.Msg {
-		return responseMsg(<-sub)
-	}
 }
