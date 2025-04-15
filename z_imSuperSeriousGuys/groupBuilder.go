@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/gocarina/gocsv"
 )
@@ -87,4 +88,66 @@ func BindLists(velocidroneList, fmvList, discordCheatSheet []Pilot) []Pilot {
 		}
 	}
 	return fmvList
+}
+
+func groupsArray(vdList [][]string) [][][]string {
+	//makes a group of groups with the total amount of racers not exceeding a +1 differential
+	var maxGroupsize = 8
+	var grouplength int
+	var totalGroups int
+	var modulus int
+	var racers = (len(vdList))
+
+	if racers > 40 {
+		maxGroupsize = 10
+	}
+
+	for i := 1; i <= maxGroupsize; i++ {
+		if float64(racers)/float64(i) <= float64(maxGroupsize) { //  42_1_2_3_4_5....oh its a float rounding issue...moron. note:fixed*
+			totalGroups = i
+			modulus = int(racers) % int(i)
+			if modulus == 0 {
+				grouplength = racers / i
+			} else {
+				grouplength = (racers - modulus) / i
+			}
+			break
+		}
+	}
+
+	var groupStructure = make([][][]string, int(totalGroups))
+	var c int
+	x := modulus
+
+	for i := 1; i <= totalGroups; i++ {
+
+		if x > 0 { // distribues the modulus between the lower teir groups
+			racers := vdList[c : int(i)*(int(grouplength)+1)]
+			groupStructure[int(i)-1] = racers
+			x--
+			c += int(grouplength) + 1
+		} else { // groups that don't take a modulus
+			racers := vdList[c : c+int(grouplength)]
+			groupStructure[int(i)-1] = racers
+			c += int(grouplength)
+		}
+	}
+	return groupStructure
+}
+
+func floatListToStringList(floatList [10]float64) []string {
+	stringList := make([]string, len(floatList))
+	for i, num := range floatList {
+		if num == 0 {
+
+		}
+		stringList[i] = strconv.FormatFloat(num, 'f', 3, 64)
+	}
+	for i, str := range stringList {
+		if str == "0.000" {
+			stringList[i] = "-"
+		}
+
+	}
+	return stringList
 }

@@ -59,7 +59,7 @@ func waitForMsg(sub chan []byte) tea.Cmd {
 	}
 }
 
-//////// end msg cmds /////
+// form stuff
 
 func newRoomForm() *huh.Form {
 	form := huh.NewForm(
@@ -69,7 +69,7 @@ func newRoomForm() *huh.Form {
 				Title("Active Races:").
 				OptionsFunc(func() []huh.Option[string] {
 					s := rooms
-					// simulate API call
+					// simulate API call - can remove
 					time.Sleep(1 * time.Second)
 					return huh.NewOptions(s...)
 				},
@@ -82,7 +82,7 @@ func newRoomForm() *huh.Form {
 							}
 							return nil
 						}).
-						Affirmative("Yep").
+						Affirmative("Yep"). //is this ever displayed?
 						Negative("Wait, no"),
 				),
 		).WithWidth(45).
@@ -91,6 +91,17 @@ func newRoomForm() *huh.Form {
 	)
 	return form
 }
+
+func processForm(e *huh.Form) (vd, fmvBound []Pilot) {
+	discordTarget := GetDiscordId(e.GetString("discord"))
+	fmvTarget := GetFMVvoice(e.GetString("fmv"))
+	vdTarget := GetVdRacers(e.GetString("vd"))
+	registeredTarget := BindLists(vdTarget, fmvTarget, discordTarget)
+	return vdTarget, registeredTarget
+
+}
+
+// server io stuff
 func closeWebSocket(conn *websocket.Conn) {
 	err := conn.WriteControl(websocket.CloseMessage,
 		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
@@ -199,6 +210,7 @@ func getRaceRecords() []string {
 	return raceIds
 }
 
+// styles
 func fmvTableSelectedStyle(bgColor, fgColor string) table.Styles {
 	s := table.DefaultStyles()
 	s.Header = s.Header.
@@ -223,6 +235,8 @@ func vdSearchSelectedStyle(color string) list.DefaultDelegate {
 
 	return s
 }
+
+// table stuff
 func buildRaceTable() table.Model {
 	fmvColumns := []table.Column{
 		{Title: "Pilot", Width: 16},
@@ -268,9 +282,7 @@ func buildFMVtable() table.Model {
 		{Title: "Qualify time", Width: 16},
 		{Title: "Status", Width: 10},
 	}
-
 	rows := []table.Row{}
-
 	fmvTable := table.New(
 		table.WithColumns(fmvColumns),
 		table.WithRows(rows),
@@ -289,20 +301,16 @@ func buildFMVtable() table.Model {
 		Foreground(lipgloss.Color("207"))
 
 	fmvTable.SetStyles(s)
-
 	return fmvTable
 }
 func updateRaceTable(pilots []Pilot) []table.Row {
 	rows := []table.Row{}
-
-	//Maybe this will work?
 	sort.Slice(pilots, func(i, j int) bool {
 		var a, b float64
 		a, _ = strconv.ParseFloat(pilots[i].QualifyingTime, 64)
 		b, _ = strconv.ParseFloat(pilots[j].QualifyingTime, 64)
 		return a < b
 	})
-
 	for _, i := range pilots {
 		if i.Status {
 			var s []string
@@ -316,14 +324,11 @@ func updateRaceTable(pilots []Pilot) []table.Row {
 			rows = append(rows, s)
 		}
 	}
-
 	return rows
-
 }
 
 func updateFMVtable(racers []Pilot) []table.Row {
 	rows := []table.Row{}
-
 	for _, i := range racers {
 		var s []string
 		var status string
@@ -340,6 +345,45 @@ func updateFMVtable(racers []Pilot) []table.Row {
 	}
 	return rows
 }
+
+func makeColorTables(brackets [][][]string) (tableList []table.Model) {
+	indexLen := len(brackets)
+	colors := []string{"190", "171", "123", "214", "47"}
+
+	for i := 0; i < indexLen; i++ {
+		columns := []table.Column{
+			{Title: "Pilot", Width: 16},
+			{Title: "Time", Width: 7},
+			{Title: "Points", Width: 7},
+		}
+		rows := []table.Row{}
+		groupTable := table.New(
+			table.WithColumns(columns),
+			table.WithRows(rows),
+			table.WithFocused(false),
+			table.WithHeight(14),
+		)
+		s := table.DefaultStyles()
+		s.Header = s.Header.
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("ffb3fd")).
+			Foreground(lipgloss.Color("239")).
+			BorderBottom(true).
+			Bold(false)
+		s.Selected = s.Selected.
+			Background(nil).Bold(false)
+
+		s.Cell = s.Cell.
+			Foreground(lipgloss.Color(colors[i]))
+			//Foreground(lipgloss.Color("128"))
+
+		groupTable.SetStyles(s)
+		tableList = append(tableList, groupTable)
+	}
+	return tableList
+}
+
+//list stuff
 
 func buildVelocidroneList(vdSheet []Pilot) list.Model {
 	var racers = []list.Item{}
@@ -364,15 +408,6 @@ func buildVelocidroneList(vdSheet []Pilot) list.Model {
 		vdList.InsertItem(99999, obj) //out of range placement appends item to list
 	}
 	return vdList
-}
-
-func processForm(e *huh.Form) (vd, fmvBound []Pilot) {
-	discordTarget := GetDiscordId(e.GetString("discord"))
-	fmvTarget := GetFMVvoice(e.GetString("fmv"))
-	vdTarget := GetVdRacers(e.GetString("vd"))
-	registeredTarget := BindLists(vdTarget, fmvTarget, discordTarget)
-	return vdTarget, registeredTarget
-
 }
 
 func makeSortedRaceList(pilotList []Pilot) [][]string {
@@ -418,105 +453,6 @@ func makeSortedRaceList(pilotList []Pilot) [][]string {
 		racingList = append(racingList, racestring)
 	}
 	return racingList
-}
-
-func groupsArray(vdList [][]string) [][][]string {
-	//makes a group of groups with the total amount of racers not exceeding a +1 differential
-	var maxGroupsize = 8
-	var grouplength int
-	var totalGroups int
-	var modulus int
-	var racers = (len(vdList))
-
-	if racers > 40 {
-		maxGroupsize = 10
-	}
-
-	for i := 1; i <= maxGroupsize; i++ {
-		if float64(racers)/float64(i) <= float64(maxGroupsize) { //  42_1_2_3_4_5....oh its a float rounding issue...moron. note:fixed*
-			totalGroups = i
-			modulus = int(racers) % int(i)
-			if modulus == 0 {
-				grouplength = racers / i
-			} else {
-				grouplength = (racers - modulus) / i
-			}
-			break
-		}
-	}
-
-	var groupStructure = make([][][]string, int(totalGroups))
-	var c int
-	x := modulus
-
-	for i := 1; i <= totalGroups; i++ {
-
-		if x > 0 { // distribues the modulus between the lower teir groups
-			racers := vdList[c : int(i)*(int(grouplength)+1)]
-			groupStructure[int(i)-1] = racers
-			x--
-			c += int(grouplength) + 1
-		} else { // groups that don't take a modulus
-			racers := vdList[c : c+int(grouplength)]
-			groupStructure[int(i)-1] = racers
-			c += int(grouplength)
-		}
-	}
-	return groupStructure
-}
-
-func makeColorTables(brackets [][][]string) (tableList []table.Model) {
-	indexLen := len(brackets)
-	colors := []string{"190", "171", "123", "214", "47"}
-
-	for i := 0; i < indexLen; i++ {
-		columns := []table.Column{
-			{Title: "Pilot", Width: 16},
-			{Title: "Time", Width: 7},
-			{Title: "Points", Width: 7},
-		}
-		rows := []table.Row{}
-		groupTable := table.New(
-			table.WithColumns(columns),
-			table.WithRows(rows),
-			table.WithFocused(false),
-			table.WithHeight(14),
-		)
-		s := table.DefaultStyles()
-		s.Header = s.Header.
-			BorderStyle(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color("ffb3fd")).
-			Foreground(lipgloss.Color("239")).
-			BorderBottom(true).
-			Bold(false)
-		s.Selected = s.Selected.
-			Background(nil).Bold(false)
-
-		s.Cell = s.Cell.
-			Foreground(lipgloss.Color(colors[i]))
-			//Foreground(lipgloss.Color("128"))
-
-		groupTable.SetStyles(s)
-		tableList = append(tableList, groupTable)
-	}
-	return tableList
-}
-
-func floatListToStringList(floatList [10]float64) []string {
-	stringList := make([]string, len(floatList))
-	for i, num := range floatList {
-		if num == 0 {
-
-		}
-		stringList[i] = strconv.FormatFloat(num, 'f', 3, 64)
-	}
-	for i, str := range stringList {
-		if str == "0.000" {
-			stringList[i] = "-"
-		}
-
-	}
-	return stringList
 }
 
 // model methods
