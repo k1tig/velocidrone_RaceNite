@@ -32,8 +32,6 @@ func (h *Hub) run() {
 				delete(h.clients, client)
 				close(client.send)
 			}
-
-			// I feel like this has do with something
 		case message := <-h.broadcast:
 			for client := range h.clients {
 				select {

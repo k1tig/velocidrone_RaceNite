@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -99,9 +100,24 @@ func editBracket(c *gin.Context) {
 
 				for client := range clients {
 					message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-					
-					
-					client.Send(websocket.TextMessage, message)
+					//client.send <- message
+					//client.Send(websocket.TextMessage, message)
+					client.conn.SetWriteDeadline(time.Now().Add(writeWait))
+
+					w, err := client.conn.NextWriter(websocket.TextMessage)
+					if err != nil {
+						return
+					}
+					w.Write(message)
+					// Add queued chat messages to the current websocket message.
+					n := len(client.send)
+					for i := 0; i < n; i++ {
+						w.Write(newline)
+						w.Write(<-client.send)
+					}
+					if err := w.Close(); err != nil {
+						return
+					}
 				}
 				c.IndentedJSON(http.StatusOK, gin.H{"message:": " Update Successfull"})
 				return

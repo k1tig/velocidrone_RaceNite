@@ -20,7 +20,7 @@ type Client struct { // Client is a middleman between the websocket connection a
 
 const (
 	writeWait      = 10 * time.Second    // Time allowed to write a message to the peer.
-	pongWait       = 60 * time.Second    // Time allowed to read the next pong message from the peer.
+	pongWait       = 30 * time.Second    // Time allowed to read the next pong message from the peer.
 	pingPeriod     = (pongWait * 9) / 10 // Send pings to peer with this period. Must be less than pongWait.
 	maxMessageSize = 512                 // Maximum message size allowed from peer.
 )
@@ -55,7 +55,11 @@ func (c *Client) readPump() { //exchange from ws to hub
 	}()
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	c.conn.SetPongHandler(func(string) error {
+		c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		log.Println("Pong recieved")
+		return nil
+	})
 	for {
 		messageType, message, err := c.conn.ReadMessage()
 		if err != nil {
@@ -82,8 +86,8 @@ func (c *Client) writePump() { // writePump pumps messages from the hub to the w
 		case message, ok := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				// The hub closed the channel.
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				log.Printf("Hub Connection timed out: %s", c.conn.LocalAddr())
 				return
 			}
 			w, err := c.conn.NextWriter(websocket.TextMessage)
@@ -103,7 +107,7 @@ func (c *Client) writePump() { // writePump pumps messages from the hub to the w
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
+				log.Printf("Pong msg unable to be sent: %s", err)
 			}
 		}
 	}
